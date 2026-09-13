@@ -1,8 +1,9 @@
 import {VERSION_PREFIX_MASK} from '../transaction/constants';
 import {Message} from './legacy';
 import {MessageV0} from './v0';
+import {MessageV1} from './v1';
 
-export type VersionedMessage = Message | MessageV0;
+export type VersionedMessage = Message | MessageV0 | MessageV1;
 // eslint-disable-next-line no-redeclare
 export const VersionedMessage = {
   deserializeMessageVersion(serializedMessage: Uint8Array): 'legacy' | number {
@@ -27,6 +28,8 @@ export const VersionedMessage = {
 
     if (version === 0) {
       return MessageV0.deserialize(serializedMessage);
+    } else if (version === 1) {
+      return MessageV1.deserialize(serializedMessage);
     } else {
       throw new Error(
         `Transaction message version ${version} deserialization is not supported`,

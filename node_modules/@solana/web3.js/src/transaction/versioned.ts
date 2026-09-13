@@ -3,14 +3,14 @@ import * as BufferLayout from '@solana/buffer-layout';
 import {Signer} from '../keypair';
 import assert from '../utils/assert';
 import {VersionedMessage} from '../message/versioned';
-import {SIGNATURE_LENGTH_IN_BYTES} from './constants';
+import {SIGNATURE_LENGTH_IN_BYTES, VERSION_1_MESSAGE_PREFIX} from './constants';
 import * as shortvec from '../utils/shortvec-encoding';
 import * as Layout from '../layout';
 import {sign} from '../utils/ed25519';
 import {PublicKey} from '../publickey';
 import {guardedSplice} from '../utils/guarded-array-utils';
 
-export type TransactionVersion = 'legacy' | 0;
+export type TransactionVersion = 'legacy' | 0 | 1;
 
 /**
  * Versioned transaction class
@@ -77,6 +77,10 @@ export class VersionedTransaction {
   }
 
   static deserialize(serializedTransaction: Uint8Array): VersionedTransaction {
+    if (serializedTransaction[0] === VERSION_1_MESSAGE_PREFIX) {
+      return this.deserializeV1(serializedTransaction);
+    }
+
     let byteArray = [...serializedTransaction];
 
     const signatures = [];
@@ -88,6 +92,32 @@ export class VersionedTransaction {
     }
 
     const message = VersionedMessage.deserialize(new Uint8Array(byteArray));
+    return new VersionedTransaction(message, signatures);
+  }
+
+  private static deserializeV1(
+    serializedTransaction: Uint8Array,
+  ): VersionedTransaction {
+    const numRequiredSignatures = serializedTransaction[1];
+    const signaturesLength = numRequiredSignatures * SIGNATURE_LENGTH_IN_BYTES;
+    const messageLength = serializedTransaction.length - signaturesLength;
+    assert(
+      messageLength > 0,
+      'Expected transaction to have enough bytes for its signatures',
+    );
+
+    const message = VersionedMessage.deserialize(
+      serializedTransaction.slice(0, messageLength),
+    );
+
+    const signatures = [];
+    for (let i = 0; i < numRequiredSignatures; i++) {
+      const offset = messageLength + i * SIGNATURE_LENGTH_IN_BYTES;
+      signatures.push(
+        serializedTransaction.slice(offset, offset + SIGNATURE_LENGTH_IN_BYTES),
+      );
+    }
+
     return new VersionedTransaction(message, signatures);
   }
 
